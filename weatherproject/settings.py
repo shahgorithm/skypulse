@@ -10,7 +10,12 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-zn1+$2r63q-qcsvp)l^8a
 
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = ['*']
+
+# Render reverse proxy support
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com', 'http://localhost', 'http://127.0.0.1']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
