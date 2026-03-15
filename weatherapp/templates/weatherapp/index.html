@@ -1,0 +1,1896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyPulse{% if city %} | {{ city }}{% endif %}</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+    :root{
+        --tl:#6b9fff; --tl-dk:#4a7fe0;
+        --glass:rgba(255,255,255,.07); --glass-h:rgba(255,255,255,.13);
+        --bdr:rgba(255,255,255,.10); --dim:rgba(255,255,255,.48);
+        --sw:72px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'Poppins',sans-serif;color:#fff;height:100vh;overflow:hidden}
+
+    /* ── BG ── */
+    #bgv{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+    #bgf{position:fixed;inset:0;background:linear-gradient(145deg,#080c18,#0d1628 55%,#0a1020);z-index:-2}
+    #bgo{position:fixed;inset:0;background:linear-gradient(155deg,rgba(0,0,0,.75),rgba(8,12,28,.62) 50%,rgba(0,0,0,.80));z-index:-1}
+
+    /* ── Preloader ── */
+    #pre{position:fixed;inset:0;background:#080c18;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:9999;transition:opacity .6s}
+    #pre .pb{font-size:1.2rem;font-weight:700;color:var(--tl);letter-spacing:3px}
+    .spin{width:40px;height:40px;border:3px solid rgba(107,159,255,.15);border-top-color:var(--tl);border-radius:50%;animation:spin .85s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ── Dashboard shell ── */
+    .dash{display:flex;height:100vh;overflow:hidden}
+
+    /* ── Sidebar ── */
+    .sb{width:var(--sw);flex-shrink:0;height:100vh;background:rgba(0,0,0,.50);backdrop-filter:blur(28px);border-right:1px solid var(--bdr);display:flex;flex-direction:column;align-items:center;padding:20px 0;z-index:20}
+    .sb-logo{width:40px;height:40px;background:var(--tl);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1rem;margin-bottom:28px;flex-shrink:0}
+    .sb-nav{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+    .sbn{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.40);font-size:.96rem;background:transparent;border:none;cursor:pointer;text-decoration:none;transition:all .25s}
+    .sbn:hover{color:var(--tl);background:rgba(107,159,255,.10)}
+    .sbn.on{background:var(--tl);color:#fff}
+    .sb-btm{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:4px}
+
+    /* ── Sidebar tooltip label ── */
+    .sbn{position:relative}
+    .sbn::after{
+        content:attr(title);
+        position:absolute;left:calc(100% + 14px);top:50%;
+        transform:translateY(-50%) translateX(-6px);
+        background:rgba(10,14,28,.96);
+        border:1px solid rgba(107,159,255,.30);
+        color:#fff;font-family:'Poppins',sans-serif;font-size:.70rem;font-weight:600;
+        padding:5px 11px;border-radius:9px;white-space:nowrap;
+        opacity:0;pointer-events:none;transition:all .22s;z-index:200;
+        box-shadow:0 4px 16px rgba(0,0,0,.40);
+    }
+    .sbn:hover::after{opacity:1;transform:translateY(-50%) translateX(0)}
+    .sbn.on::after{opacity:0!important}
+
+    /* ── AI Prompt Bubble ── */
+    #ai-prompt-bubble{
+        position:fixed;bottom:90px;right:88px;
+        background:rgba(10,14,28,.95);
+        border:1px solid rgba(107,159,255,.35);
+        border-radius:14px 14px 4px 14px;
+        padding:9px 14px;font-size:.74rem;font-weight:600;color:#fff;
+        z-index:999;white-space:nowrap;cursor:pointer;
+        box-shadow:0 4px 20px rgba(0,0,0,.45);
+        animation:promptPop 5s ease 1.2s both;
+        display:flex;align-items:center;gap:7px;
+    }
+    #ai-prompt-bubble i{color:var(--tl);font-size:.80rem}
+    @keyframes promptPop{
+        0%{opacity:0;transform:translateY(12px) scale(.9)}
+        15%{opacity:1;transform:translateY(0) scale(1)}
+        75%{opacity:1}
+        100%{opacity:0;transform:translateY(-4px) scale(.95);pointer-events:none}
+    }
+
+    /* ── Main area ── */
+    .ma{flex:1;min-width:0;display:flex;flex-direction:column;padding:18px 24px 0;overflow:hidden}
+
+    /* ── Header ── */
+    .hdr{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-bottom:16px}
+    .hdr-welcome small{display:block;font-size:.70rem;color:var(--dim);line-height:1.2}
+    .hdr-welcome strong{font-size:1rem;font-weight:700}
+    .hdr-right{display:flex;align-items:center;gap:8px}
+    .sw-form{display:flex;background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--bdr);border-radius:40px;overflow:hidden;transition:border-color .3s,box-shadow .3s}
+    .sw-form:focus-within{border-color:var(--tl);box-shadow:0 0 0 3px rgba(107,159,255,.13)}
+    .sw-form input{background:transparent;border:none;outline:none;color:#fff;font-family:'Poppins',sans-serif;font-size:.78rem;padding:8px 16px;width:170px}
+    .sw-form input::placeholder{color:rgba(255,255,255,.35)}
+    .sw-form button{background:var(--tl);border:none;color:#fff;padding:8px 14px;cursor:pointer;font-size:.80rem;transition:background .2s}
+    .sw-form button:hover{background:var(--tl-dk)}
+    /* ── Search autocomplete ── */
+    .sw-wrap{position:relative}
+    #sw-suggest{
+        position:absolute;top:calc(100% + 7px);left:0;
+        min-width:240px;
+        background:rgba(8,12,24,.97);
+        border:1px solid rgba(107,159,255,.28);
+        border-radius:14px;overflow:hidden;
+        z-index:600;display:none;
+        box-shadow:0 10px 36px rgba(0,0,0,.60);
+    }
+    #sw-suggest.open{display:block}
+    .sw-sug-item{
+        padding:9px 14px;font-size:.75rem;
+        color:rgba(255,255,255,.65);cursor:pointer;
+        display:flex;align-items:center;gap:9px;
+        border-bottom:1px solid rgba(255,255,255,.05);
+        transition:background .15s;
+    }
+    .sw-sug-item:last-child{border-bottom:none}
+    .sw-sug-item:hover,.sw-sug-item.act{background:rgba(107,159,255,.13);color:#fff}
+    .sw-sug-item i{color:var(--tl);font-size:.70rem;flex-shrink:0}
+    .hib{width:36px;height:36px;border-radius:10px;background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.65);font-size:.88rem;cursor:pointer;transition:all .2s}
+    .hib:hover{background:var(--glass-h);color:#fff}
+    .av{width:36px;height:36px;border-radius:50%;background:var(--tl);display:flex;align-items:center;justify-content:center;font-size:.78rem;cursor:pointer}
+
+    /* ── Scroll area ── */
+    .scroll-area{flex:1;overflow-y:auto;overflow-x:hidden;padding-right:4px;padding-bottom:24px}
+    .scroll-area::-webkit-scrollbar{width:3px}
+    .scroll-area::-webkit-scrollbar-thumb{background:rgba(107,159,255,.35);border-radius:4px}
+
+    /* ── Weather grid (top) ── */
+    .wg{display:grid;grid-template-columns:1fr 270px;gap:18px;margin-bottom:18px;min-height:0}
+    .wl{display:flex;flex-direction:column;justify-content:space-between;min-height:0}
+    .wl-top{flex:1;min-height:0}
+    .fc-badge{display:inline-block;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:3px 13px;font-size:.70rem;font-weight:500;letter-spacing:.6px;margin-bottom:10px}
+    .cond-h{font-size:clamp(1.8rem,4vw,3.4rem);font-weight:800;line-height:1.1;text-shadow:0 2px 24px rgba(0,0,0,.5);margin-bottom:10px}
+    .cond-h .cm{display:block}
+    .cond-h .cs{display:block;font-weight:300;font-size:.52em;opacity:.80;text-transform:capitalize}
+    .cond-p{font-size:.78rem;font-weight:300;color:rgba(255,255,255,.60);line-height:1.65;max-width:420px}
+    .fc-strip{flex-shrink:0;margin-top:12px}
+    .fc-row{display:flex;justify-content:space-between;margin-bottom:2px}
+    .fc-sl{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+    .fc-tv{font-size:.80rem;font-weight:500}
+    .fc-ic img{width:22px;height:22px;opacity:.80}
+    .fc-sl.on .fc-tv{color:var(--tl);font-weight:700;font-size:.88rem}
+    .fc-sl.on .fc-ic img{opacity:1}
+    .fcd{width:6px;height:6px;background:var(--tl);border-radius:50%;margin-bottom:1px}
+    .fc-wave{width:100%;height:36px}
+    .day-row{display:flex;justify-content:space-between}
+    .day-l{flex:1;text-align:center;font-size:.70rem;color:var(--dim)}
+    .day-l.td{color:#fff;font-weight:600}
+    .wr{display:flex;flex-direction:column;gap:10px;overflow:visible}
+    .cc{background:rgba(255,255,255,.12);backdrop-filter:blur(22px);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:16px 18px;flex-shrink:0}
+    .cc-loc{display:flex;align-items:center;gap:5px;font-size:.76rem;font-weight:600;color:var(--tl);margin-bottom:5px}
+    .cc-tmp{font-size:2.8rem;font-weight:800;line-height:1;letter-spacing:-2px;margin-bottom:10px}
+    .cc-stats{display:flex;gap:10px;flex-wrap:wrap}
+    .cc-s{display:flex;align-items:center;gap:4px;font-size:.70rem;color:rgba(255,255,255,.65)}
+    .cc-s i{color:var(--tl);font-size:.68rem}
+    .mc{background:rgba(255,255,255,.07);backdrop-filter:blur(16px);border:1px solid var(--bdr);border-radius:14px;padding:12px 15px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;transition:background .25s,transform .25s}
+    .mc:hover{background:rgba(255,255,255,.12);transform:translateX(-3px)}
+    .mc-l{display:flex;flex-direction:column;gap:1px}
+    .mc-tag{font-size:.62rem;color:var(--dim)}
+    .mc-name{font-size:.82rem;font-weight:600}
+    .mc-cond{font-size:.65rem;color:var(--dim);text-transform:capitalize}
+    .mc-val{font-size:1.2rem;font-weight:700;display:flex;align-items:center;gap:6px}
+    .mc-val i{font-size:.9rem;color:rgba(255,255,255,.45)}
+
+    /* ── Section header ── */
+    .sec-hdr{display:flex;align-items:center;gap:10px;margin:18px 0 12px}
+    .sec-hdr i{font-size:1rem;color:var(--tl)}
+    .sec-hdr h4{font-size:.90rem;font-weight:700;margin:0}
+    .sec-hdr small{font-size:.68rem;color:var(--dim);margin-left:auto}
+    .sec-div{height:1px;background:rgba(255,255,255,.08);margin-bottom:16px}
+
+    /* ── Alerts bar ── */
+    .alerts-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+    .alert-chip{display:inline-flex;align-items:center;gap:7px;border-radius:30px;padding:6px 14px;font-size:.74rem;font-weight:600;border:1px solid}
+    .ac-danger{background:rgba(220,53,69,.15);border-color:rgba(220,53,69,.40);color:#ff8f8f}
+    .ac-warning{background:rgba(255,193,7,.12);border-color:rgba(255,193,7,.35);color:#ffd060}
+    .ac-info{background:rgba(13,202,240,.12);border-color:rgba(13,202,240,.35);color:#50daff}
+
+    /* ── Insight cards ── */
+    .ins-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:18px}
+    .ins-card{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--bdr);border-radius:16px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;transition:background .25s,transform .25s}
+    .ins-card:hover{background:var(--glass-h);transform:translateY(-2px)}
+    .ins-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0}
+    .is-success{background:rgba(25,135,84,.25);color:#6fe0a8}
+    .is-warning{background:rgba(255,193,7,.20);color:#ffd060}
+    .is-danger{background:rgba(220,53,69,.20);color:#ff8f8f}
+    .is-info{background:rgba(13,202,240,.18);color:#50daff}
+    .ins-body h6{font-size:.78rem;font-weight:700;margin-bottom:3px}
+    .ins-body p{font-size:.72rem;color:rgba(255,255,255,.60);line-height:1.5;margin:0}
+
+    /* ── 5-day forecast ── */
+    .fc5-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}
+    .fc5-card{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--bdr);border-radius:16px;padding:14px 10px;text-align:center;transition:background .25s,transform .25s;position:relative;overflow:hidden}
+    .fc5-card:hover{background:var(--glass-h);transform:translateY(-4px)}
+    .fc5-card.td::before{content:'';position:absolute;inset:0;border-radius:16px;border:1px solid var(--tl);pointer-events:none}
+    .fc5-day{font-size:.75rem;font-weight:700;color:var(--tl);margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px}
+    .fc5-date{font-size:.65rem;color:var(--dim);margin-bottom:8px}
+    .fc5-icon img{width:36px;height:36px}
+    .fc5-cond{font-size:.65rem;color:var(--dim);margin:4px 0;text-transform:capitalize}
+    .fc5-temps{display:flex;justify-content:center;gap:8px;font-size:.80rem;font-weight:600;margin-top:6px}
+    .fc5-mn{color:var(--dim)}
+    .fc5-mx{color:#fff}
+    .fc5-pop{display:flex;align-items:center;justify-content:center;gap:4px;font-size:.65rem;color:#50daff;margin-top:4px}
+    .fc5-wind{font-size:.62rem;color:var(--dim);margin-top:2px}
+
+    /* ── Activities ── */
+    .act-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+    .act-panel{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--bdr);border-radius:18px;padding:16px}
+    .act-panel-hdr{font-size:.76rem;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+    .act-panel-hdr i{color:var(--tl)}
+    .act-items{display:flex;flex-direction:column;gap:7px}
+    .act-item{display:flex;align-items:center;gap:9px;font-size:.76rem;padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);transition:background .2s}
+    .act-item:hover{background:rgba(255,255,255,.11)}
+    .act-item i{color:var(--tl);font-size:.85rem;width:18px;text-align:center}
+    .act-item.no{opacity:.45}
+    .act-item.no i{color:rgba(255,100,100,.7)}
+    .act-badge{margin-left:auto;font-size:.58rem;padding:2px 8px;border-radius:10px;font-weight:600}
+    .ab-ok{background:rgba(107,159,255,.18);color:var(--tl)}
+    .ab-no{background:rgba(220,53,69,.18);color:#ff8f8f}
+
+    /* ── AQI ── */
+    .aqi-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+    .aqi-card{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--bdr);border-radius:18px;padding:18px}
+    .aqi-val{font-size:3rem;font-weight:900;line-height:1;margin:6px 0}
+    .aqi-bar-wrap{height:8px;background:rgba(255,255,255,.12);border-radius:8px;margin:10px 0}
+    .aqi-bar{height:100%;border-radius:8px;transition:width .8s ease}
+    .aqi-comp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+    .aqi-comp{background:rgba(255,255,255,.06);border-radius:10px;padding:8px 10px;font-size:.72rem}
+    .aqi-comp span{display:block;color:var(--dim);font-size:.62rem}
+    .aqi-comp strong{font-size:.84rem}
+
+    /* ── B2B ── */
+    .b2b-list{display:flex;flex-direction:column;gap:9px;margin-bottom:18px}
+    .b2b-card{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--bdr);border-radius:14px;padding:13px 15px;display:flex;align-items:flex-start;gap:12px;transition:background .25s,transform .25s}
+    .b2b-card:hover{background:var(--glass-h);transform:translateX(3px)}
+    .b2b-ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0}
+    .bc-success{background:rgba(25,135,84,.25);color:#6fe0a8}
+    .bc-warning{background:rgba(255,193,7,.20);color:#ffd060}
+    .bc-danger{background:rgba(220,53,69,.20);color:#ff8f8f}
+    .b2b-info h6{font-size:.76rem;font-weight:700;margin-bottom:2px}
+    .b2b-info .sector-tag{font-size:.62rem;color:var(--dim);margin-bottom:4px}
+    .b2b-info p{font-size:.71rem;color:rgba(255,255,255,.58);line-height:1.5;margin:0}
+    .impact-badge{margin-left:auto;font-size:.60rem;padding:2px 9px;border-radius:10px;font-weight:700;flex-shrink:0}
+    .ib-s{background:rgba(25,135,84,.25);color:#6fe0a8}
+    .ib-w{background:rgba(255,193,7,.20);color:#ffd060}
+    .ib-d{background:rgba(220,53,69,.20);color:#ff8f8f}
+    .ib-p{background:rgba(107,159,255,.18);color:var(--tl)}
+
+    /* ── Social ── */
+    .soc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:18px}
+    .soc-card{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--bdr);border-radius:16px;padding:14px;transition:background .25s,transform .25s}
+    .soc-card:hover{background:var(--glass-h);transform:translateY(-3px)}
+    .soc-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .soc-hdr i{font-size:1.1rem}
+    .soc-hdr .plat{font-size:.76rem;font-weight:700}
+    .soc-time{display:inline-block;font-size:.66rem;background:rgba(107,159,255,.15);color:var(--tl);border-radius:8px;padding:2px 9px;margin-bottom:6px}
+    .soc-type{font-size:.76rem;font-weight:600;margin-bottom:4px}
+    .soc-tip{font-size:.70rem;color:rgba(255,255,255,.58);line-height:1.5}
+
+    /* ── Travel ── */
+    .travel-card{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--bdr);border-radius:18px;padding:18px;margin-bottom:18px}
+    .travel-rating{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:30px;font-size:.80rem;font-weight:700;margin-bottom:12px}
+    .tr-success{background:rgba(25,135,84,.25);border:1px solid rgba(25,135,84,.4);color:#6fe0a8}
+    .tr-info{background:rgba(13,202,240,.18);border:1px solid rgba(13,202,240,.35);color:#50daff}
+    .tr-warning{background:rgba(255,193,7,.18);border:1px solid rgba(255,193,7,.35);color:#ffd060}
+    .tr-danger{background:rgba(220,53,69,.18);border:1px solid rgba(220,53,69,.35);color:#ff8f8f}
+    .travel-best{background:rgba(107,159,255,.10);border:1px solid rgba(107,159,255,.20);border-radius:12px;padding:10px 14px;margin:10px 0;font-size:.78rem}
+    .travel-best strong{color:var(--tl);display:block;margin-bottom:3px;font-size:.82rem}
+    .travel-tips{display:flex;flex-direction:column;gap:5px;margin-top:10px}
+    .travel-tip{display:flex;align-items:flex-start;gap:7px;font-size:.72rem;color:rgba(255,255,255,.65)}
+    .travel-tip i{color:var(--tl);flex-shrink:0;margin-top:2px;font-size:.65rem}
+
+    /* ── Favorites ── */
+    .fav-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:18px;padding:12px 16px;background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--bdr);border-radius:14px}
+    .fav-label{font-size:.72rem;color:var(--dim);font-weight:500;margin-right:4px}
+    .fav-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(107,159,255,.12);border:1px solid rgba(107,159,255,.25);border-radius:20px;padding:4px 12px;font-size:.73rem;cursor:pointer;transition:all .2s}
+    .fav-chip:hover{background:rgba(107,159,255,.22)}
+    .fav-chip .rm{font-size:.60rem;color:var(--dim);margin-left:3px;cursor:pointer}
+    .fav-chip .rm:hover{color:#ff8f8f}
+    .fav-add{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.20);border-radius:20px;padding:4px 12px;font-size:.73rem;cursor:pointer;transition:all .2s}
+    .fav-add:hover{background:rgba(255,255,255,.12);border-color:var(--tl)}
+
+    /* ── Error ── */
+    .err-box{background:rgba(255,80,80,.12);border:1px solid rgba(255,100,100,.25);border-radius:16px;padding:24px;text-align:center;grid-column:1/-1}
+    .err-box h6{color:#ff8080;margin-bottom:6px}
+    .err-box p{font-size:.78rem;color:var(--dim)}
+
+    /* ══ NEW: Impact Score ══ */
+    .impact-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+    .impact-cat{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--bdr);border-radius:16px;padding:14px 12px;text-align:center;transition:background .25s,transform .25s}
+    .impact-cat:hover{background:var(--glass-h);transform:translateY(-3px)}
+    .impact-cat-name{font-size:.70rem;color:var(--dim);font-weight:500;margin-bottom:6px;text-transform:uppercase;letter-spacing:.7px}
+    .impact-score-big{font-size:2rem;font-weight:900;line-height:1;margin-bottom:4px}
+    .impact-bar-wrap{height:5px;background:rgba(255,255,255,.12);border-radius:5px;margin:6px 0}
+    .impact-bar{height:100%;border-radius:5px;transition:width 1s ease}
+    .impact-label{font-size:.65rem;font-weight:600;border-radius:8px;padding:2px 8px;display:inline-block;margin-top:2px}
+    .il-success{background:rgba(25,135,84,.25);color:#6fe0a8}
+    .il-info{background:rgba(13,202,240,.18);color:#50daff}
+    .il-warning{background:rgba(255,193,7,.20);color:#ffd060}
+    .il-danger{background:rgba(220,53,69,.20);color:#ff8f8f}
+    .il-secondary{background:rgba(255,255,255,.10);color:var(--dim)}
+    .impact-overall{background:var(--glass);backdrop-filter:blur(16px);border:1px solid rgba(107,159,255,.25);border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    .impact-overall-score{font-size:2.8rem;font-weight:900;color:var(--tl);line-height:1}
+    .impact-overall-info h5{font-size:.90rem;font-weight:700;margin-bottom:2px}
+    .impact-overall-info p{font-size:.72rem;color:var(--dim);margin:0}
+
+    /* ══ NEW: Mood Mode ══ */
+    .mood-card{border-radius:20px;padding:20px 22px;margin-bottom:18px;border:1px solid rgba(255,255,255,.15);backdrop-filter:blur(18px);display:flex;gap:20px;align-items:center;transition:transform .25s}
+    .mood-card:hover{transform:translateY(-2px)}
+    .mood-emoji{font-size:3.2rem;line-height:1;flex-shrink:0}
+    .mood-title{font-size:1.2rem;font-weight:800;margin-bottom:4px}
+    .mood-desc{font-size:.76rem;color:rgba(255,255,255,.70);line-height:1.6;margin-bottom:12px}
+    .mood-acts{display:flex;flex-wrap:wrap;gap:7px}
+    .mood-act{font-size:.70rem;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:4px 12px}
+
+    /* ══ AQI Weather Detail Rows ══ */
+    .wd-rows{display:flex;flex-direction:column}
+    .wd-row{display:flex;justify-content:space-between;align-items:center;font-size:.80rem;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+    .wd-row:first-child{padding-top:0}
+    .wd-row:last-child{border-bottom:none;padding-bottom:0}
+    .wd-lbl{display:flex;align-items:center;gap:9px;color:var(--dim);flex:1;min-width:0}
+    .wd-lbl i{width:16px;text-align:center;flex-shrink:0;font-size:.88rem}
+    .wd-val{font-weight:600;color:#fff;white-space:nowrap;margin-left:12px}
+
+    /* ══ NEW: Content Creator Tool ══ */
+    .creator-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;align-items:stretch}
+    .creator-card{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--bdr);border-radius:18px;padding:16px;display:flex;flex-direction:column}
+    .creator-badge{display:inline-block;font-size:.70rem;font-weight:700;border-radius:10px;padding:4px 12px;margin-bottom:10px}
+    .creator-shots{display:flex;flex-direction:column;gap:7px;flex:1}
+    .creator-shot{display:flex;align-items:center;gap:9px;font-size:.75rem;padding:7px 11px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
+    .creator-shot i{color:var(--tl);font-size:.8rem;width:16px;text-align:center;flex-shrink:0}
+    .creator-gear{display:flex;flex-direction:column;gap:7px}
+    .gear-item{display:flex;align-items:flex-start;gap:8px;font-size:.73rem;padding:7px 11px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
+    .gear-item i{color:#ffd060;font-size:.75rem;margin-top:1px;flex-shrink:0}
+    .shoot-window{margin-top:auto;padding-top:14px}
+
+    /* ══ Daily Lifestyle Guide ══ */
+    .lifestyle-hero{
+        background:linear-gradient(130deg,rgba(107,159,255,.14),rgba(107,159,255,.05));
+        border:1px solid rgba(107,159,255,.22);border-radius:16px;
+        padding:15px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;
+        margin-bottom:13px;
+    }
+    .lh-greeting{font-size:.86rem;font-weight:600;display:flex;align-items:center;gap:9px;margin-bottom:3px}
+    .lh-greeting i{color:var(--tl);font-size:.95rem}
+    .lh-date{font-size:.68rem;color:var(--dim)}
+    .lh-badge{font-size:.62rem;font-weight:700;letter-spacing:.4px;background:rgba(107,159,255,.12);border:1px solid rgba(107,159,255,.22);border-radius:20px;padding:5px 12px;color:var(--tl);display:flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0}
+    .lifestyle-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+    .ls-card{background:var(--glass);border:1px solid var(--bdr);border-radius:14px;padding:12px 13px;display:flex;align-items:flex-start;gap:11px}
+    .ls-icon{width:34px;height:34px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.84rem}
+    .ls-icon.c-success{background:rgba(25,135,84,.20);color:#6fe0a8}
+    .ls-icon.c-warning{background:rgba(255,193,7,.18);color:#ffd060}
+    .ls-icon.c-danger{background:rgba(220,53,69,.18);color:#ff8f8f}
+    .ls-icon.c-info{background:rgba(13,202,240,.12);color:#50daff}
+    .ls-body{flex:1;min-width:0}
+    .ls-text{font-size:.72rem;color:rgba(255,255,255,.80);line-height:1.52;margin-bottom:6px}
+    .ls-tag{font-size:.58rem;font-weight:700;border-radius:8px;padding:2px 8px;display:inline-block}
+    .ls-tag.t-success{background:rgba(25,135,84,.20);color:#6fe0a8}
+    .ls-tag.t-warning{background:rgba(255,193,7,.18);color:#ffd060}
+    .ls-tag.t-danger{background:rgba(220,53,69,.18);color:#ff8f8f}
+    .ls-tag.t-info{background:rgba(13,202,240,.12);color:#50daff}
+
+    /* ══ NEW: Event Planner ══ */
+    .event-form{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--bdr);border-radius:18px;padding:18px;margin-bottom:12px}
+    .event-form-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+    .event-input{background:rgba(255,255,255,.08);border:1px solid var(--bdr);border-radius:12px;color:#fff;font-family:'Poppins',sans-serif;font-size:.78rem;padding:9px 14px;flex:1;min-width:120px;outline:none;transition:border-color .2s}
+    .event-input:focus{border-color:var(--tl)}
+    .event-input::-webkit-calendar-picker-indicator{filter:invert(1);cursor:pointer}
+    .event-result{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--bdr);border-radius:18px;padding:18px;margin-bottom:18px}
+    .event-risk{display:inline-flex;align-items:center;gap:7px;border-radius:20px;padding:5px 14px;font-size:.76rem;font-weight:700;margin-bottom:12px}
+    .er-success{background:rgba(25,135,84,.22);border:1px solid rgba(25,135,84,.35);color:#6fe0a8}
+    .er-warning{background:rgba(255,193,7,.18);border:1px solid rgba(255,193,7,.3);color:#ffd060}
+    .er-danger{background:rgba(220,53,69,.18);border:1px solid rgba(220,53,69,.3);color:#ff8f8f}
+    .event-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+    .event-stat{background:rgba(255,255,255,.06);border-radius:12px;padding:10px;text-align:center;font-size:.72rem}
+    .event-stat strong{display:block;font-size:1.1rem;font-weight:700;margin-bottom:2px}
+    .event-stat span{color:var(--dim);font-size:.65rem}
+
+    /* ══ NEW: City Comparison ══ */
+    .compare-form{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--bdr);border-radius:18px;padding:18px;margin-bottom:12px}
+    .compare-table-wrap{overflow-x:auto;margin-bottom:18px}
+    .compare-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.76rem}
+    .compare-table th{background:rgba(107,159,255,.12);color:var(--tl);font-weight:600;padding:10px 14px;text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.5px}
+    .compare-table th:first-child{border-radius:12px 0 0 0}
+    .compare-table th:last-child{border-radius:0 12px 0 0}
+    .compare-table td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:middle}
+    .compare-table tr:hover td{background:rgba(255,255,255,.05)}
+    .compare-table .city-col{font-weight:700;color:#fff}
+    .compare-cond{display:flex;align-items:center;gap:6px}
+    .compare-cond img{width:24px;height:24px}
+
+    /* ══ NEW: Chart / Trends ══ */
+    .chart-wrap{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--bdr);border-radius:18px;padding:18px;margin-bottom:18px}
+    .chart-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+    .chart-tab{font-size:.72rem;font-weight:600;padding:5px 14px;border-radius:20px;border:1px solid var(--bdr);background:transparent;color:var(--dim);cursor:pointer;transition:all .2s}
+    .chart-tab.on{background:var(--tl);color:#fff;border-color:var(--tl)}
+    .chart-canvas-wrap{position:relative;height:160px}
+
+    /* ══ NEW: Monetization ══ */
+    .ad-banner{background:linear-gradient(135deg,rgba(107,159,255,.10),rgba(0,100,255,.08));border:1px dashed rgba(107,159,255,.30);border-radius:14px;padding:16px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:.76rem}
+    .ad-banner .ad-label{font-size:.60rem;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;display:flex;align-items:center;gap:4px}
+    .ad-banner h3{font-size:.82rem;font-weight:700;margin:0 0 4px;line-height:1.4;color:#fff}
+    .ad-banner .ad-desc{font-size:.70rem;color:var(--dim);margin:0;line-height:1.5}
+    .ad-banner .ad-btn{font-size:.72rem;padding:8px 18px;border-radius:20px;background:var(--tl);color:#fff;border:none;cursor:pointer;white-space:nowrap;font-weight:600;transition:background .2s,transform .2s;text-decoration:none;display:inline-flex;align-items:center;gap:5px;flex-shrink:0}
+    .ad-banner .ad-btn:hover{background:var(--tl-dk);transform:translateY(-1px)}
+    .ad-content{flex:1;min-width:0}
+
+    /* ══ NEW: Assistant ══ */
+    #ai-fab{position:fixed;bottom:28px;right:28px;width:52px;height:52px;border-radius:50%;background:var(--tl);border:none;color:#fff;font-size:1.2rem;cursor:pointer;z-index:1000;box-shadow:0 4px 20px rgba(107,159,255,.45);transition:transform .2s,box-shadow .2s}
+    #ai-fab:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(107,159,255,.6)}
+    #ai-panel{position:fixed;bottom:92px;right:28px;width:340px;max-height:460px;background:rgba(10,22,28,.96);backdrop-filter:blur(28px);border:1px solid rgba(107,159,255,.25);border-radius:20px;display:none;flex-direction:column;z-index:999;box-shadow:0 10px 40px rgba(0,0,0,.5);overflow:hidden}
+    #ai-panel.open{display:flex}
+    .ai-header{background:rgba(107,159,255,.12);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(107,159,255,.15)}
+    .ai-header h6{font-size:.82rem;font-weight:700;margin:0;display:flex;align-items:center;gap:7px}
+    .ai-close{background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:.9rem;padding:0}
+    #ai-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+    #ai-msgs::-webkit-scrollbar{width:2px}
+    #ai-msgs::-webkit-scrollbar-thumb{background:rgba(107,159,255,.3);border-radius:4px}
+    .ai-msg{max-width:88%;padding:8px 12px;border-radius:14px;font-size:.74rem;line-height:1.55}
+    .ai-msg.bot{background:rgba(107,159,255,.12);border:1px solid rgba(107,159,255,.18);align-self:flex-start;border-bottom-left-radius:4px}
+    .ai-msg.user{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.12);align-self:flex-end;border-bottom-right-radius:4px;}
+    .ai-input-row{display:flex;gap:8px;padding:10px 12px;border-top:1px solid rgba(255,255,255,.08)}
+    #ai-input{flex:1;background:rgba(255,255,255,.07);border:1px solid var(--bdr);border-radius:12px;color:#fff;font-family:'Poppins',sans-serif;font-size:.75rem;padding:8px 12px;outline:none}
+    #ai-input:focus{border-color:var(--tl)}
+    #ai-send{background:var(--tl);border:none;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer;font-size:.78rem;transition:background .2s}
+    #ai-send:hover{background:var(--tl-dk)}
+    .ai-quick{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 8px}
+    .ai-q{font-size:.66rem;background:rgba(107,159,255,.10);border:1px solid rgba(107,159,255,.20);border-radius:12px;padding:4px 10px;cursor:pointer;transition:background .2s}
+    .ai-q:hover{background:rgba(107,159,255,.22)}
+
+    /* ── Animations ── */
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .au{animation:fadeUp .55s ease both}
+    .ai-anim{animation:fadeIn .65s ease both}
+    /* ── AI Typing indicator ── */
+    .ai-typing{display:flex;align-items:center;gap:4px;padding:10px 14px}
+    .typing-dot{width:7px;height:7px;border-radius:50%;background:rgba(107,159,255,.55);animation:typingPulse 1.2s infinite ease-in-out}
+    .typing-dot:nth-child(2){animation-delay:.3s}
+    .typing-dot:nth-child(3){animation-delay:.6s}
+    @keyframes typingPulse{0%,80%,100%{transform:scale(.7);opacity:.5}40%{transform:scale(1);opacity:1}}
+    .d1{animation-delay:.07s}.d2{animation-delay:.14s}.d3{animation-delay:.21s}
+    .d4{animation-delay:.28s}.d5{animation-delay:.35s}.d6{animation-delay:.42s}
+
+    /* ── Responsive ── */
+
+    /* Wide desktop (≥1400px) */
+    @media(min-width:1400px){
+        .wg{grid-template-columns:repeat(4,1fr)}
+        .ma{padding:22px 32px 0}
+        .fc5-row{grid-template-columns:repeat(5,1fr)}
+    }
+
+    /* Standard desktop (1201-1399px) — uses default wg: 1fr 270px */
+    @media(max-width:1399px) and (min-width:1201px){
+        .ma{padding:18px 26px 0}
+        .fc5-row{grid-template-columns:repeat(5,1fr)}
+    }
+
+    /* Laptop (901-1200px) */
+    @media(max-width:1200px) and (min-width:901px){
+        .sb{padding:16px 0}
+        .wg{grid-template-columns:1fr 1fr}
+        .impact-grid{grid-template-columns:repeat(2,1fr)}
+        .fc5-row{grid-template-columns:repeat(4,1fr)}
+        .lifestyle-grid{grid-template-columns:repeat(2,1fr)}
+        .ma{padding:16px 18px 0}
+    }
+
+    /* Tablet (601-900px) */
+    @media(max-width:900px){
+        /* Sidebar — narrower icon rail */
+        :root{--sw:60px}
+        .sb{padding:12px 0;gap:0}
+        .sb-logo{width:36px;height:36px;font-size:.88rem;margin-bottom:20px}
+        .sbn{width:38px;height:38px;border-radius:10px;font-size:.86rem}
+        /* Keep tooltip but restrict z-index to stay above content */
+        .sbn::after{font-size:.66rem;padding:4px 9px;left:calc(100% + 10px)}
+
+        /* Layout */
+        .wg{grid-template-columns:1fr}
+        .act-grid,.aqi-grid,.creator-grid{grid-template-columns:1fr}
+        .lifestyle-grid{grid-template-columns:1fr 1fr}
+        .fc5-row{grid-template-columns:repeat(3,1fr)}
+        .event-stats{grid-template-columns:repeat(2,1fr)}
+        .impact-grid{grid-template-columns:repeat(2,1fr)}
+        .ma{padding:14px 16px 0}
+        .hdr{gap:10px}
+        .hdr-welcome{display:none}
+        .sw-form input{width:150px}
+    }
+
+    /* Mobile (≤600px) — bottom nav bar */
+    @media(max-width:600px){
+        html,body{overflow:auto;height:auto}
+        .dash{flex-direction:column;height:100dvh;overflow:hidden}
+
+        /* Sidebar → fixed bottom navigation */
+        .sb{
+            position:fixed;bottom:0;left:0;right:0;
+            width:100%;height:58px;
+            flex-direction:row;
+            padding:0 4px;
+            border-right:none;border-top:1px solid var(--bdr);
+            z-index:200;
+            overflow:hidden;
+        }
+        .sb-logo{display:none}
+        .sb-nav{
+            flex-direction:row;gap:0;
+            justify-content:space-around;flex:1;
+            overflow-x:auto;-webkit-overflow-scrolling:touch;
+        }
+        .sb-nav::-webkit-scrollbar{display:none}
+        .sb-btm{flex-direction:row;margin-top:0;gap:0;flex-shrink:0}
+        .sbn::after{display:none!important}
+        .sbn{width:38px;height:38px;border-radius:10px;font-size:.84rem}
+
+        /* Main area fills viewport above bottom nav */
+        .ma{
+            overflow:hidden;
+            padding:10px 12px 0;
+            height:calc(100dvh - 58px);
+            display:flex;flex-direction:column;
+        }
+        .scroll-area{flex:1;overflow-y:auto;height:auto;padding-bottom:16px}
+
+        /* Grids → single column */
+        .wg{grid-template-columns:1fr}
+        .fc5-row{grid-template-columns:repeat(2,1fr)}
+        .impact-grid{grid-template-columns:1fr 1fr}
+        .event-stats{grid-template-columns:repeat(2,1fr)}
+        .act-grid,.aqi-grid,.creator-grid{grid-template-columns:1fr}
+        .lifestyle-grid{grid-template-columns:1fr}
+        .lifestyle-hero{flex-direction:column;align-items:flex-start;gap:8px}
+
+        /* Header */
+        .hdr{padding:8px 0;gap:8px}
+        .hdr-welcome{display:none}
+        .sw-form input{width:calc(100vw - 160px);min-width:100px}
+
+        /* AI panel */
+        #ai-panel{width:calc(100vw - 24px);right:12px;bottom:70px;max-height:52vh}
+        #ai-fab{bottom:70px;right:14px}
+        #ai-prompt-bubble{bottom:128px;right:70px}
+
+        /* Brandmark */
+        .brandmark{padding:12px 14px;flex-wrap:wrap;gap:10px}
+    }
+
+    /* Very small phones (≤360px) */
+    @media(max-width:360px){
+        .sbn{width:34px;height:34px;font-size:.78rem}
+        .sw-form input{width:calc(100vw - 130px)}
+        .impact-grid{grid-template-columns:1fr}
+        .fc5-row{grid-template-columns:1fr 1fr}
+        .cond-h{font-size:clamp(1.5rem,8vw,2.4rem)}
+    }
+
+    /* ── Brandmark footer ── */
+    .brandmark{
+        margin-top:24px;
+        padding:12px 90px 12px 18px;
+        border-top:1px solid rgba(107,159,255,.18);
+        display:flex;align-items:center;justify-content:space-between;
+        gap:12px;
+    }
+    .bm-left{display:flex;flex-direction:column;gap:3px}
+    .bm-dev{font-size:.73rem;color:rgba(255,255,255,.55)}
+    .bm-dev strong{color:var(--tl);font-weight:700;letter-spacing:.2px}
+    .bm-copy{font-size:.65rem;color:rgba(255,255,255,.32)}
+    .bm-socials{display:flex;gap:7px;align-items:center}
+    .bm-icon{
+        width:30px;height:30px;border-radius:8px;
+        background:rgba(107,159,255,.10);border:1px solid rgba(107,159,255,.20);
+        display:flex;align-items:center;justify-content:center;
+        color:rgba(255,255,255,.55);font-size:.78rem;
+        transition:all .2s;text-decoration:none;
+    }
+    .bm-icon:hover{background:rgba(107,159,255,.22);color:#fff;border-color:rgba(107,159,255,.40)}
+    .bm-icon.bm-li:hover{background:rgba(10,102,194,.28);color:#5aacf5;border-color:rgba(10,102,194,.50)}
+    .bm-icon.bm-gh:hover{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.25)}
+    .bm-icon.bm-go:hover{background:rgba(234,67,53,.18);color:#f4705a;border-color:rgba(234,67,53,.35)}
+    </style>
+</head>
+<body>
+
+<!-- ── BG ── -->
+{% if city_video %}<video id="bgv" autoplay muted loop playsinline><source src="{{ city_video }}" type="video/mp4"></video>
+{% else %}<div id="bgf"></div>{% endif %}
+<div id="bgo"></div>
+
+<!-- ── Preloader ── -->
+<div id="pre">
+    <div class="pb"><i class="fas fa-cloud-sun me-2"></i>SkyPulse</div>
+    <div class="spin"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     DASHBOARD
+══════════════════════════════════════════════════════════ -->
+<div class="dash">
+
+  <!-- Sidebar -->
+  <aside class="sb">
+    <div class="sb-logo"><i class="fas fa-water"></i></div>
+    <nav class="sb-nav">
+      <a class="sbn on" title="Dashboard"      data-section="top"           role="button" aria-label="Dashboard - scroll to top"      onclick="scrollSec('#top')">          <i class="fas fa-grip"               aria-hidden="true"></i></a>
+      <a class="sbn"    title="Impact Score"   data-section="sec-impact"    role="button" aria-label="Weather Impact Score"            onclick="scrollSec('#sec-impact')">   <i class="fas fa-chart-bar"          aria-hidden="true"></i></a>
+      <a class="sbn"    title="Daily Guide"    data-section="sec-lifestyle" role="button" aria-label="Daily Lifestyle Guide"           onclick="scrollSec('#sec-lifestyle')"><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i></a>
+      <a class="sbn"    title="Forecast"       data-section="sec-forecast"  role="button" aria-label="5-Day Forecast"                  onclick="scrollSec('#sec-forecast')"> <i class="fas fa-calendar-days"      aria-hidden="true"></i></a>
+      <a class="sbn"    title="Activities"     data-section="sec-act"       role="button" aria-label="Activity Suggestions"            onclick="scrollSec('#sec-act')">       <i class="fas fa-person-running"     aria-hidden="true"></i></a>
+      <a class="sbn"    title="Air Quality"    data-section="sec-aqi"       role="button" aria-label="Air Quality Index"               onclick="scrollSec('#sec-aqi')">       <i class="fas fa-leaf"               aria-hidden="true"></i></a>
+      <a class="sbn"    title="Creator"        data-section="sec-creator"   role="button" aria-label="Content Creator Tool"            onclick="scrollSec('#sec-creator')">  <i class="fas fa-camera"             aria-hidden="true"></i></a>
+      <a class="sbn"    title="Event Planner"  data-section="sec-event"     role="button" aria-label="Event Weather Planner"           onclick="scrollSec('#sec-event')">    <i class="fas fa-calendar-check"     aria-hidden="true"></i></a>
+      <a class="sbn"    title="City Compare"   data-section="sec-compare"   role="button" aria-label="City Comparison"                 onclick="scrollSec('#sec-compare')">  <i class="fas fa-code-compare"       aria-hidden="true"></i></a>
+    </nav>
+    <div class="sb-btm">
+      <a class="sbn" title="Assistant" role="button" aria-label="Open Weather Assistant" onclick="toggleAI()"><i class="fas fa-robot" aria-hidden="true"></i></a>
+      <a class="sbn" title="Logout" role="button" aria-label="Logout"><i class="fas fa-right-from-bracket" aria-hidden="true"></i></a>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="ma">
+
+    <!-- Header -->
+    <div class="hdr">
+      <div class="hdr-welcome">
+        <small>Welcome back</small>
+        <strong>SkyPulse</strong>
+      </div>
+      <div class="hdr-right">
+        <div class="sw-wrap">
+          <form class="sw-form" method="POST" action="/">
+            {% csrf_token %}
+            <input type="hidden" name="compare_cities" id="hdr-compare-val" value="{{ compare_input }}">
+            <input type="hidden" name="event_date" id="hdr-event-val" value="{{ event_date }}">
+            <input type="text" id="sw-city-inp" name="city" placeholder="Search city..." value="{{ city }}" autocomplete="off" required>
+            <button type="submit" aria-label="Search"><i class="fas fa-magnifying-glass" aria-hidden="true"></i></button>
+          </form>
+          <div id="sw-suggest"></div>
+        </div>
+        <button class="hib" onclick="saveFavorite()" aria-label="Save city to favourites"><i class="fas fa-star" aria-hidden="true"></i></button>
+        <button class="hib" onclick="toggleAI()" aria-label="Open Weather Assistant"><i class="fas fa-robot" aria-hidden="true"></i></button>
+        <div class="av" aria-label="User profile" role="img"><i class="fas fa-user" aria-hidden="true"></i></div>
+      </div>
+    </div>
+
+    <!-- Scrollable content -->
+    <div class="scroll-area" id="scroll-area">
+
+      <!-- ── FAVORITES BAR ── -->
+      <div class="fav-bar" id="fav-bar">
+        <span class="fav-label"><i class="fas fa-star me-1" style="color:var(--tl)"></i>Saved:</span>
+        <span id="fav-chips"></span>
+        <span class="fav-add" onclick="saveFavorite()"><i class="fas fa-plus"></i> Add Current</span>
+      </div>
+
+      {% if data %}
+
+      <!-- ── TOP WEATHER GRID ── -->
+      <div class="wg">
+        <!-- Left -->
+        <div class="wl">
+          <div class="wl-top au">
+            <span class="fc-badge"><i class="fas fa-cloud-sun me-1"></i>Weather Forecast</span>
+            <h1 class="cond-h">
+              <span class="cm">{{ data.weather.0.main }}</span>
+              <span class="cs">{{ data.weather.0.description }}</span>
+            </h1>
+            <p class="cond-p">
+              {{ data.weather.0.description|capfirst }} in
+              <strong style="color:#fff">{{ data.name }}, {{ data.sys.country }}</strong>.
+              Feels like {{ data.main.feels_like|floatformat:0 }}&deg;C with
+              {{ data.main.humidity }}% humidity. Winds at {{ data.wind.speed }}&nbsp;m/s.
+              {% if data.uv_text %}UV: {{ data.uv_text }}.{% endif %}
+            </p>
+          </div>
+          <!-- Forecast strip -->
+          <div class="fc-strip ai-anim d2">
+            <div class="fc-row">
+              {% for t in hourly_temps %}
+              <div class="fc-sl {% if forloop.counter == 4 %}on{% endif %}">
+                {% if forloop.counter == 4 %}<div class="fcd"></div>{% endif %}
+                <span class="fc-tv">{{ t.temp }}&deg;</span>
+                <div class="fc-ic">
+                  <img src="https://openweathermap.org/img/wn/{{ data.weather.0.icon }}.png" alt="">
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            <svg class="fc-wave" viewBox="0 0 600 36" preserveAspectRatio="none">
+              <path d="{{ wave_path }}" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="{{ wave_active_x }}" y1="{{ wave_active_y }}" x2="{{ wave_active_x }}" y2="36" stroke="rgba(107,159,255,.40)" stroke-width="1" stroke-dasharray="3 3"/>
+              <circle cx="{{ wave_active_x }}" cy="{{ wave_active_y }}" r="4" fill="#6b9fff" stroke="rgba(255,255,255,.6)" stroke-width="1.5"/>
+            </svg>
+            <div class="day-row">
+              {% for d in day_labels %}
+              <div class="day-l {% if d.is_today %}td{% endif %}">{{ d.name }}</div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <!-- Right -->
+        <div class="wr">
+          <div class="cc au d1">
+            <div class="cc-loc"><i class="fas fa-location-dot"></i>{{ data.name }}, {{ data.sys.country }}</div>
+            <div class="cc-tmp">{{ data.main.temp|floatformat:0 }}&deg;C</div>
+            <div class="cc-stats">
+              <div class="cc-s"><i class="fas fa-wind"></i><span>{{ data.wind.speed }} m/s</span></div>
+              <div class="cc-s"><i class="fas fa-droplet"></i><span>{{ data.main.humidity }}%</span></div>
+              <div class="cc-s"><i class="fas fa-eye"></i><span>{{ data.visibility }}m</span></div>
+            </div>
+          </div>
+          <div class="mc au d2">
+            <div class="mc-l"><span class="mc-tag">{{ data.sys.country }}</span><span class="mc-name">Feels Like</span><span class="mc-cond">{{ data.weather.0.description }}</span></div>
+            <div class="mc-val">{{ data.main.feels_like|floatformat:0 }}&deg;<i class="fas fa-temperature-half"></i></div>
+          </div>
+          <div class="mc au d3">
+            <div class="mc-l"><span class="mc-tag">{{ data.sys.country }}</span><span class="mc-name">Pressure</span><span class="mc-cond">Atmospheric</span></div>
+            <div class="mc-val">{{ data.main.pressure }}<i class="fas fa-gauge-high"></i></div>
+          </div>
+          <div class="mc au d4">
+            <div class="mc-l"><span class="mc-tag">{{ data.sys.country }}</span><span class="mc-name">Cloud Cover</span><span class="mc-cond">{{ data.weather.0.main }}</span></div>
+            <div class="mc-val">{{ data.clouds.all }}%<i class="fas fa-cloud"></i></div>
+          </div>
+        </div>
+      </div>
+
+      {% elif error %}
+      <div class="err-box au mb-3">
+        <i class="fas fa-circle-exclamation fa-2x mb-2" style="color:#ff8080"></i>
+        <h6>City Not Found</h6>
+        <p>{{ error }}. Please check the spelling and try again.</p>
+      </div>
+      {% endif %}
+
+      <!-- ── ALERTS BAR ── -->
+      {% if alerts %}
+      <div class="alerts-bar ai-anim" id="sec-alerts">
+        {% for a in alerts %}
+        <div class="alert-chip ac-{{ a.c }}">
+          <i class="fas {{ a.i }}"></i>{{ a.t }}
+          <span style="opacity:.65;font-weight:400">{{ a.m }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if data %}
+
+      <!-- ══════════════ WEATHER IMPACT SCORE ══════════════ -->
+      {% if impact %}
+      <div id="sec-impact">
+        <div class="sec-hdr ai-anim">
+          <i class="fas fa-chart-bar"></i><h4>Weather Impact Score</h4>
+          <small>Conditions rated out of 10</small>
+        </div>
+        <!-- Overall -->
+        <div class="impact-overall au">
+          <div class="impact-overall-score">{{ impact.overall }}<span style="font-size:1rem;opacity:.55">/10</span></div>
+          <div class="impact-overall-info">
+            <h5>Overall: <span class="impact-label il-{{ impact.overall_color }}">{{ impact.overall_label }}</span></h5>
+            <p>Composite score across outdoor, travel, sports &amp; air quality</p>
+          </div>
+        </div>
+        <!-- Per-category -->
+        <div class="impact-grid">
+          <div class="impact-cat au d1">
+            <div class="impact-cat-name"><i class="fas fa-sun me-1"></i>Outdoor</div>
+            <div class="impact-score-big" style="color:{% if impact.outdoor.color == 'success' %}#6fe0a8{% elif impact.outdoor.color == 'warning' %}#ffd060{% elif impact.outdoor.color == 'info' %}#50daff{% else %}#ff8f8f{% endif %}">
+              {{ impact.outdoor.score }}
+            </div>
+            <div class="impact-bar-wrap">
+              <div class="impact-bar" style="width:{{ impact.outdoor.pct }}%;background:{% if impact.outdoor.color == 'success' %}#6fe0a8{% elif impact.outdoor.color == 'warning' %}#ffd060{% elif impact.outdoor.color == 'info' %}#50daff{% else %}#ff8f8f{% endif %}"></div>
+            </div>
+            <span class="impact-label il-{{ impact.outdoor.color }}">{{ impact.outdoor.label }}</span>
+          </div>
+          <div class="impact-cat au d2">
+            <div class="impact-cat-name"><i class="fas fa-plane me-1"></i>Travel</div>
+            <div class="impact-score-big" style="color:{% if impact.travel.color == 'success' %}#6fe0a8{% elif impact.travel.color == 'warning' %}#ffd060{% elif impact.travel.color == 'info' %}#50daff{% else %}#ff8f8f{% endif %}">
+              {{ impact.travel.score }}
+            </div>
+            <div class="impact-bar-wrap">
+              <div class="impact-bar" style="width:{{ impact.travel.pct }}%;background:{% if impact.travel.color == 'success' %}#6fe0a8{% elif impact.travel.color == 'warning' %}#ffd060{% elif impact.travel.color == 'info' %}#50daff{% else %}#ff8f8f{% endif %}"></div>
+            </div>
+            <span class="impact-label il-{{ impact.travel.color }}">{{ impact.travel.label }}</span>
+          </div>
+          <div class="impact-cat au d3">
+            <div class="impact-cat-name"><i class="fas fa-futbol me-1"></i>Sports</div>
+            <div class="impact-score-big" style="color:{% if impact.sports.color == 'success' %}#6fe0a8{% elif impact.sports.color == 'warning' %}#ffd060{% elif impact.sports.color == 'info' %}#50daff{% else %}#ff8f8f{% endif %}">
+              {{ impact.sports.score }}
+            </div>
+            <div class="impact-bar-wrap">
+              <div class="impact-bar" style="width:{{ impact.sports.pct }}%;background:{% if impact.sports.color == 'success' %}#6fe0a8{% elif impact.sports.color == 'warning' %}#ffd060{% elif impact.sports.color == 'info' %}#50daff{% else %}#ff8f8f{% endif %}"></div>
+            </div>
+            <span class="impact-label il-{{ impact.sports.color }}">{{ impact.sports.label }}</span>
+          </div>
+          <div class="impact-cat au d4">
+            <div class="impact-cat-name"><i class="fas fa-lungs me-1"></i>Air Quality</div>
+            <div class="impact-score-big" style="color:{% if impact.air.color == 'success' %}#6fe0a8{% elif impact.air.color == 'warning' %}#ffd060{% elif impact.air.color == 'info' %}#50daff{% else %}#ff8f8f{% endif %}">
+              {{ impact.air.score }}
+            </div>
+            <div class="impact-bar-wrap">
+              <div class="impact-bar" style="width:{{ impact.air.pct }}%;background:{% if impact.air.color == 'success' %}#6fe0a8{% elif impact.air.color == 'warning' %}#ffd060{% elif impact.air.color == 'info' %}#50daff{% else %}#ff8f8f{% endif %}"></div>
+            </div>
+            <span class="impact-label il-{{ impact.air.color }}">{{ impact.air.label }}</span>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ══════════════ WEATHER MOOD MODE ══════════════ -->
+      {% if mood %}
+      <div>
+        <div class="sec-hdr ai-anim">
+          <i class="fas fa-masks-theater"></i><h4>Weather Mood Mode</h4>
+          <small>Vibe-based recommendations</small>
+        </div>
+        <div class="mood-card au" style="background:{{ mood.bg }};border-color:rgba(255,255,255,.15)">
+          <div class="mood-emoji">{{ mood.emoji }}</div>
+          <div style="flex:1">
+            <div class="mood-title">{{ mood.mood }}</div>
+            <div class="mood-desc">{{ mood.desc }}</div>
+            <div class="mood-acts">
+              {% for a in mood.activities %}
+              <span class="mood-act"><i class="fas fa-check me-1" style="color:var(--tl);font-size:.60rem"></i>{{ a }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ══════════════ DAILY LIFESTYLE GUIDE ══════════════ -->
+      {% if lifestyle %}
+      <div id="sec-lifestyle">
+        <div class="sec-hdr ai-anim">
+          <i class="fas fa-wand-magic-sparkles"></i><h4>Daily Lifestyle Guide</h4>
+          <small>Personalised for today</small>
+        </div>
+        <div class="lifestyle-hero au">
+          <div>
+            <div class="lh-greeting">
+              <i class="fas {{ lifestyle.g_icon }}" aria-hidden="true"></i>
+              {{ lifestyle.greeting }}, <strong>{{ city|title }}</strong>
+            </div>
+            <div class="lh-date">{{ lifestyle.day_str }} &bull; {{ lifestyle.date_str }}</div>
+          </div>
+          <div class="lh-badge">
+            <i class="fas fa-sparkles" aria-hidden="true"></i>Smart Lifestyle Coach
+          </div>
+        </div>
+        <div class="lifestyle-grid">
+          {% for rec in lifestyle.recs %}
+          <div class="ls-card au d{{ forloop.counter }}">
+            <div class="ls-icon c-{{ rec.c }}">
+              <i class="fas {{ rec.icon }}" aria-hidden="true"></i>
+            </div>
+            <div class="ls-body">
+              <div class="ls-text">{{ rec.text }}</div>
+              <span class="ls-tag t-{{ rec.c }}">{{ rec.tag }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ══════════════ 5-DAY FORECAST ══════════════ -->
+      {% if forecast %}
+      <div id="sec-forecast">
+        <div class="sec-hdr ai-anim">
+          <i class="fas fa-calendar-week"></i><h4>5-Day Forecast</h4>
+          <small>OpenWeatherMap</small>
+        </div>
+        <div class="fc5-row">
+          {% for f in forecast %}
+          <div class="fc5-card {% if f.is_today %}td{% endif %} au d{{ forloop.counter }}">
+            <div class="fc5-day">{{ f.day }}</div>
+            <div class="fc5-date">{{ f.date }}</div>
+            <div class="fc5-icon">
+              <img src="https://openweathermap.org/img/wn/{{ f.icon }}@2x.png" alt="{{ f.condition }}">
+            </div>
+            <div class="fc5-cond">{{ f.condition }}</div>
+            <div class="fc5-temps">
+              <span class="fc5-mn">{{ f.temp_min }}&deg;</span>
+              <span style="color:var(--dim)">/</span>
+              <span class="fc5-mx">{{ f.temp_max }}&deg;</span>
+            </div>
+            {% if f.pop > 0 %}
+            <div class="fc5-pop"><i class="fas fa-droplet"></i>{{ f.pop }}%</div>
+            {% endif %}
+            <div class="fc5-wind"><i class="fas fa-wind"></i> {{ f.wind }} m/s</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ══════════════ FORECAST TRENDS (CHART.JS) ══════════════ -->
+      {% if forecast %}
+      <div>
+        <div class="sec-hdr ai-anim">
+          <i class="fas fa-chart-line"></i><h4>Forecast Trends</h4>
+          <small>5-day chart analysis</small>
+        </div>
+        <div class="chart-wrap au">
+          <div class="chart-tabs">
+            <button class="chart-tab on" onclick="showChart('temp',this)"><i class="fas fa-thermometer-half me-1"></i>Temperature</button>
+            <button class="chart-tab" onclick="showChart('hum',this)"><i class="fas fa-droplet me-1"></i>Humidity</button>
+            <button class="chart-tab" onclick="showChart('wind',this)"><i class="fas fa-wind me-1"></i>Wind</button>
+            <button class="chart-tab" onclick="showChart('pop',this)"><i class="fas fa-cloud-rain me-1"></i>Rain %</button>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="wChart"></canvas>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ══════════════ SMART INSIGHTS ══════════════ -->
+      {% if insights %}
+      <div id="sec-insights">
+        <div class="sec-hdr ai-anim">
+          <i class="fas fa-brain"></i><h4>Smart Weather Insights</h4>
+          <small>Smart Analysis</small>
+        </div>
+        <div class="ins-grid">
+          {% for ins in insights %}
+          <div class="ins-card au d{{ forloop.counter }}">
+            <div class="ins-icon is-{{ ins.sev }}"><i class="fas {{ ins.icon }}"></i></div>
+            <div class="ins-body">
+              <h6>{{ ins.title }}</h6>
+              <p>{{ ins.text }}</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ═══════ AD BANNER (Monetization Zone 1) ═══════ -->
+      <aside class="ad-banner au" role="complementary" aria-label="Sponsored travel flight deals">
+        <div class="ad-content">
+          <div class="ad-label"><i class="fas fa-plane"></i>Sponsored &middot; Travel Partners</div>
+          <h3>Book Flights with Real-Time Weather Insights</h3>
+          <p class="ad-desc">Compare live forecast conditions for your destination before buying a ticket, land prepared, every time.</p>
+        </div>
+        <a class="ad-btn" href="#" rel="sponsored noopener" aria-label="Explore weather-aware flight deals" title="Find flights matched to live weather forecasts">
+          <i class="fas fa-plane"></i>Explore Deals
+        </a>
+      </aside>
+
+      <!-- ══════════════ ACTIVITY SUGGESTIONS ══════════════ -->
+      <div id="sec-act">
+        <div class="sec-hdr ai-anim">
+          <i class="fas fa-person-running"></i><h4>Activity Suggestions</h4>
+          <small>Based on current conditions</small>
+        </div>
+        <div class="act-grid">
+          <div class="act-panel au d1">
+            <div class="act-panel-hdr"><i class="fas fa-sun"></i>Outdoor Activities</div>
+            <div class="act-items">
+              {% if activities.outdoor %}
+                {% for a in activities.outdoor %}
+                <div class="act-item {% if not a.ok %}no{% endif %}">
+                  <i class="fas {{ a.icon }}"></i>
+                  <span>{{ a.name }}</span>
+                  <span class="act-badge {% if a.ok %}ab-ok{% else %}ab-no{% endif %}">
+                    {% if a.ok %}Suitable{% else %}Avoid{% endif %}
+                  </span>
+                </div>
+                {% endfor %}
+              {% else %}
+                <div style="font-size:.75rem;color:var(--dim);padding:8px 0">No outdoor activities recommended in current conditions.</div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="act-panel au d2">
+            <div class="act-panel-hdr"><i class="fas fa-house"></i>Indoor Activities</div>
+            <div class="act-items">
+              {% for a in activities.indoor %}
+              <div class="act-item">
+                <i class="fas {{ a.icon }}"></i>
+                <span>{{ a.name }}</span>
+                <span class="act-badge ab-ok">Suitable</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ AQI ══════════════ -->
+      <div id="sec-aqi">
+        <div class="sec-hdr ai-anim">
+          <i class="fas fa-leaf"></i><h4>Air Quality Index</h4>
+          <small>OpenWeatherMap Pollution API</small>
+        </div>
+        <div class="aqi-grid">
+          {% if aqi %}
+          <div class="aqi-card au d1">
+            <div style="font-size:.75rem;font-weight:600;color:var(--dim)">Air Quality: {{ data.name }}</div>
+            <div class="aqi-val" style="color:{% if aqi.color == 'success' %}#6fe0a8{% elif aqi.color == 'warning' %}#ffd060{% elif aqi.color == 'info' %}#50daff{% else %}#ff8f8f{% endif %}">
+              {{ aqi.aqi }}<span style="font-size:1rem;font-weight:400;opacity:.6">/5</span>
+            </div>
+            <div style="font-size:.80rem;font-weight:700;margin-bottom:6px;color:{% if aqi.color == 'success' %}#6fe0a8{% elif aqi.color == 'warning' %}#ffd060{% elif aqi.color == 'info' %}#50daff{% else %}#ff8f8f{% endif %}">
+              {{ aqi.label }}
+            </div>
+            <div class="aqi-bar-wrap">
+              <div class="aqi-bar" style="width:{{ aqi.bar }}%;background:{% if aqi.color == 'success' %}#6fe0a8{% elif aqi.color == 'warning' %}#ffd060{% elif aqi.color == 'info' %}#50daff{% else %}#ff8f8f{% endif %}"></div>
+            </div>
+            <p style="font-size:.72rem;color:rgba(255,255,255,.60);line-height:1.5;margin:6px 0 10px">{{ aqi.advice }}</p>
+            <div class="aqi-comp-grid">
+              <div class="aqi-comp"><span>PM2.5</span><strong>{{ aqi.pm2_5 }} µg/m³</strong></div>
+              <div class="aqi-comp"><span>PM10</span><strong>{{ aqi.pm10 }} µg/m³</strong></div>
+              <div class="aqi-comp"><span>NO₂</span><strong>{{ aqi.no2 }} µg/m³</strong></div>
+              <div class="aqi-comp"><span>O₃</span><strong>{{ aqi.o3 }} µg/m³</strong></div>
+            </div>
+          </div>
+          {% else %}
+          <div class="aqi-card au d1" style="display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:.80rem">
+            <i class="fas fa-circle-exclamation me-2"></i>AQI data unavailable
+          </div>
+          {% endif %}
+          <div class="aqi-card au d2">
+            <div style="font-size:.75rem;font-weight:600;color:var(--dim);margin-bottom:12px">Weather Details</div>
+            <div class="wd-rows">
+              <div class="wd-row">
+                <span class="wd-lbl"><i class="fas fa-radiation" style="color:#ffd060"></i>UV Index</span>
+                <span class="wd-val">{{ data.uv_index }}, {{ data.uv_text }}</span>
+              </div>
+              <div class="wd-row">
+                <span class="wd-lbl"><i class="fas fa-thermometer-half" style="color:#ff8f8f"></i>Min Temperature</span>
+                <span class="wd-val">{{ data.main.temp_min|floatformat:0 }}&deg;C</span>
+              </div>
+              <div class="wd-row">
+                <span class="wd-lbl"><i class="fas fa-thermometer-full" style="color:#ffd060"></i>Max Temperature</span>
+                <span class="wd-val">{{ data.main.temp_max|floatformat:0 }}&deg;C</span>
+              </div>
+              <div class="wd-row">
+                <span class="wd-lbl"><i class="fas fa-droplet" style="color:#50daff"></i>Humidity</span>
+                <span class="wd-val">{{ data.main.humidity }}%</span>
+              </div>
+              <div class="wd-row">
+                <span class="wd-lbl"><i class="fas fa-wind" style="color:#6fe0a8"></i>Wind Speed</span>
+                <span class="wd-val">{{ data.wind.speed }} m/s</span>
+              </div>
+              <div class="wd-row">
+                <span class="wd-lbl"><i class="fas fa-gauge-high" style="color:var(--tl)"></i>Pressure</span>
+                <span class="wd-val">{{ data.main.pressure }} hPa</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ CONTENT CREATOR TOOL ══════════════ -->
+      {% if creator %}
+      <div id="sec-creator">
+        <div class="sec-hdr ai-anim">
+          <i class="fas fa-camera"></i><h4>Content Creator Tool</h4>
+        </div>
+        <div class="creator-grid">
+          <!-- Lighting & Conditions -->
+          <div class="creator-card au d1">
+            <div style="font-size:.72rem;color:var(--dim);font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:.6px">Shooting Conditions</div>
+            <div class="mb-2">
+              <span class="creator-badge il-{{ creator.lc }}" style="{% if creator.lc == 'success' %}background:rgba(25,135,84,.22);color:#6fe0a8{% elif creator.lc == 'warning' %}background:rgba(255,193,7,.18);color:#ffd060{% elif creator.lc == 'info' %}background:rgba(13,202,240,.15);color:#50daff{% else %}background:rgba(255,255,255,.10);color:var(--dim){% endif %}">
+                <i class="fas fa-lightbulb me-1"></i>{{ creator.lighting }}
+              </span>
+            </div>
+            <p style="font-size:.73rem;color:rgba(255,255,255,.60);line-height:1.55;margin-bottom:12px">{{ creator.ldesc }}</p>
+            <div class="mb-1" style="font-size:.70rem;color:var(--dim);font-weight:600">Outdoor Shoot Suitability</div>
+            <span class="creator-badge" style="{% if creator.oc == 'success' %}background:rgba(25,135,84,.22);color:#6fe0a8{% elif creator.oc == 'warning' %}background:rgba(255,193,7,.18);color:#ffd060{% elif creator.oc == 'info' %}background:rgba(13,202,240,.15);color:#50daff{% else %}background:rgba(220,53,69,.18);color:#ff8f8f{% endif %}">
+              <i class="fas fa-camera me-1"></i>{{ creator.outdoor }}
+            </span>
+            <div style="margin-top:14px">
+              <div style="font-size:.70rem;color:var(--dim);font-weight:600;margin-bottom:7px"><i class="fas fa-bag-shopping me-1" style="color:var(--tl)"></i>Recommended Gear</div>
+              <div class="creator-gear">
+                {% for g in creator.gear %}
+                <div class="gear-item"><i class="fas fa-circle-check"></i><span>{{ g }}</span></div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          <!-- Shot Ideas -->
+          <div class="creator-card au d2">
+            <div style="font-size:.72rem;color:var(--dim);font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:.6px"><i class="fas fa-images me-1" style="color:var(--tl)"></i>Shot Ideas for Today</div>
+            <div class="creator-shots">
+              {% for s in creator.shots %}
+              <div class="creator-shot">
+                <i class="fas fa-camera-retro"></i>
+                <span>{{ s }}</span>
+              </div>
+              {% endfor %}
+            </div>
+            <div class="shoot-window">
+              <div style="padding:12px;background:rgba(107,159,255,.08);border:1px solid rgba(107,159,255,.18);border-radius:12px">
+                <div style="font-size:.72rem;font-weight:700;color:var(--tl);margin-bottom:5px"><i class="fas fa-clock me-1"></i>Best Shooting Window</div>
+                <div style="font-size:.72rem;color:rgba(255,255,255,.65)">
+                  {% if 'clear' in data.weather.0.main|lower %}
+                    Golden Hour: 30-60 min before sunset. Blue Hour: 15-30 min after sunset.
+                  {% elif 'cloud' in data.weather.0.main|lower %}
+                    All day is suitable. Soft diffused light available from morning to dusk.
+                  {% elif 'rain' in data.weather.0.main|lower %}
+                    Post-rain window (1-2 hrs after rain) gives best reflection shots.
+                  {% else %}
+                    Morning golden hour recommended for best available natural light.
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ══════════════ EVENT WEATHER PLANNER ══════════════ -->
+      <div id="sec-event">
+        <div class="sec-hdr ai-anim">
+          <i class="fas fa-calendar-check"></i><h4>Event Weather Planner</h4>
+          <small>Plan your event around the forecast</small>
+        </div>
+        <div class="event-form au">
+          <form method="POST" action="/" id="event-form" onsubmit="event.preventDefault();checkEventDate();">
+            {% csrf_token %}
+            <input type="hidden" name="city" value="{{ city }}">
+            <input type="hidden" name="compare_cities" value="{{ compare_input }}">
+            <div class="event-form-row">
+              <div style="flex:1">
+                <div style="font-size:.70rem;color:var(--dim);margin-bottom:5px">Event Date (within 5-day forecast)</div>
+                <input type="date" name="event_date" class="event-input" id="epicker" value="{{ event_date }}"
+                  min="{{ forecast.0.date_iso }}">
+              </div>
+              <button type="button" onclick="checkEventDate()" style="background:var(--tl);border:none;color:#fff;padding:10px 20px;border-radius:12px;font-family:'Poppins',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .2s" onmouseover="this.style.background='var(--tl-dk)'" onmouseout="this.style.background='var(--tl)'">
+                <i class="fas fa-magnifying-glass me-1"></i>Check Forecast
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div id="event-result-wrap">
+        {% if event_forecast %}
+        <div class="event-result au">
+          <div style="font-size:.80rem;font-weight:700;margin-bottom:8px;color:var(--dim)">
+            <i class="fas fa-calendar me-1" style="color:var(--tl)"></i>
+            Forecast for {{ event_forecast.date }}, {{ city|title }}
+          </div>
+          <div class="event-risk er-{{ event_forecast.risk_c }}">
+            <i class="fas {% if event_forecast.risk == 'Low' %}fa-check-circle{% elif event_forecast.risk == 'Moderate' %}fa-triangle-exclamation{% else %}fa-xmark-circle{% endif %}"></i>
+            Event Risk: {{ event_forecast.risk }}
+          </div>
+          <div style="font-size:.74rem;color:rgba(255,255,255,.60);margin-bottom:12px">
+            {% if event_forecast.risk == 'Low' %}Conditions look favourable for your event. Proceed as planned.
+            {% elif event_forecast.risk == 'Moderate' %}Some weather disruption possible. Have a backup plan ready.
+            {% else %}Severe conditions forecast. Consider rescheduling your event.{% endif %}
+          </div>
+          <div class="event-stats">
+            <div class="event-stat">
+              <strong>{{ event_forecast.temp_min }}&deg;/{{ event_forecast.temp_max }}&deg;C</strong>
+              <span>Temperature Range</span>
+            </div>
+            <div class="event-stat">
+              <strong style="color:#50daff">{{ event_forecast.pop }}%</strong>
+              <span>Rain Probability</span>
+            </div>
+            <div class="event-stat">
+              <strong>{{ event_forecast.wind }} m/s</strong>
+              <span>Wind Speed</span>
+            </div>
+            <div class="event-stat">
+              <strong>{{ event_forecast.humidity }}%</strong>
+              <span>Humidity</span>
+            </div>
+          </div>
+        </div>
+        {% elif event_date %}
+        <div style="font-size:.78rem;color:#ffd060;padding:12px 16px;background:rgba(255,193,7,.10);border:1px solid rgba(255,193,7,.2);border-radius:12px;margin-bottom:18px">
+          <i class="fas fa-triangle-exclamation me-1"></i>
+          No forecast data available for {{ event_date }}. The free forecast covers up to 5 days from today.
+        </div>
+        {% endif %}
+        </div>
+      </div>
+
+      <!-- ══════════════ CITY COMPARISON ══════════════ -->
+      <div id="sec-compare">
+        <div class="sec-hdr ai-anim">
+          <i class="fas fa-code-compare"></i><h4>City Weather Comparison</h4>
+          <small>Compare up to 4 cities side-by-side</small>
+        </div>
+        <div class="compare-form au">
+          <form id="compare-form" onsubmit="return doCompare(event);">
+            {% csrf_token %}
+            <div style="font-size:.70rem;color:var(--dim);margin-bottom:6px">Enter city names separated by commas (e.g. London, Tokyo, New York)</div>
+            <div class="event-form-row">
+              <input type="text" id="compare-city-inp" class="event-input" placeholder="London, Tokyo, New York, Dubai" value="{{ compare_input }}">
+              <button id="compare-btn" type="submit" style="background:var(--tl);border:none;color:#fff;padding:10px 20px;border-radius:12px;font-family:'Poppins',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .2s" onmouseover="this.style.background='var(--tl-dk)'" onmouseout="this.style.background='var(--tl)'">
+                <i class="fas fa-magnifying-glass me-1"></i>Compare
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div id="compare-result-wrap">
+        {% if comparison %}
+        <div class="compare-table-wrap au">
+          <table class="compare-table">
+            <thead>
+              <tr>
+                <th>City</th><th>Condition</th><th>Temp</th><th>Feels Like</th>
+                <th>Humidity</th><th>Wind</th><th>Pressure</th><th>UV</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in comparison %}
+              <tr>
+                {% if row.data %}
+                <td class="city-col"><i class="fas fa-location-dot me-1" style="color:var(--tl)"></i>{{ row.city }}</td>
+                <td><div class="compare-cond"><img src="https://openweathermap.org/img/wn/{{ row.data.weather.0.icon }}.png" alt=""><span style="font-size:.72rem">{{ row.data.weather.0.main }}</span></div></td>
+                <td><strong>{{ row.data.main.temp|floatformat:0 }}&deg;C</strong></td>
+                <td>{{ row.data.main.feels_like|floatformat:0 }}&deg;C</td>
+                <td>{{ row.data.main.humidity }}%</td>
+                <td>{{ row.data.wind.speed }} m/s</td>
+                <td>{{ row.data.main.pressure }} hPa</td>
+                <td>{{ row.data.uv_index }}</td>
+                {% else %}
+                <td class="city-col">{{ row.city }}</td>
+                <td colspan="7" style="color:#ff8f8f;font-size:.72rem"><i class="fas fa-circle-exclamation me-1"></i>{{ row.error }}</td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+        </div>
+      </div>
+
+      <!-- ══════════════ BUSINESS INSIGHTS ══════════════ -->
+      {% if b2b %}
+      <div>
+        <div class="sec-hdr ai-anim">
+          <i class="fas fa-briefcase"></i><h4>Business Weather Impact</h4>
+          <small>B2B Insights</small>
+        </div>
+        <div class="b2b-list">
+          {% for b in b2b %}
+          <div class="b2b-card au d{{ forloop.counter }}">
+            <div class="b2b-ico bc-{{ b.c }}"><i class="fas {{ b.icon }}"></i></div>
+            <div class="b2b-info">
+              <div class="sector-tag">{{ b.sector }}</div>
+              <h6>{{ b.text|truncatewords:10 }}</h6>
+              <p>{{ b.text }}</p>
+            </div>
+            <span class="impact-badge ib-{% if b.c == 'success' %}p{% elif b.c == 'warning' %}w{% else %}d{% endif %}">
+              {{ b.impact }}
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ═══════ AD BANNER (Monetization Zone 2) ═══════ -->
+      <aside class="ad-banner au" role="complementary" aria-label="Sponsored travel insurance quote">
+        <div class="ad-content">
+          <div class="ad-label"><i class="fas fa-shield-halved"></i>Sponsored &middot; Travel Insurance</div>
+          <h3>Weather-Triggered Travel Insurance: Automatic Payouts</h3>
+          <p class="ad-desc">Protect your trip against storms, floods and flight cancellations. Coverage activates automatically when severe weather hits your destination.</p>
+        </div>
+        <a class="ad-btn" href="#" rel="sponsored noopener" aria-label="Get an instant travel insurance quote" title="Travel insurance with automatic weather-triggered payouts">
+          <i class="fas fa-shield-halved"></i>Get a Quote
+        </a>
+      </aside>
+
+      <!-- ══════════════ SOCIAL SUGGESTIONS ══════════════ -->
+      {% if social %}
+      <div>
+        <div class="sec-hdr ai-anim">
+          <i class="fas fa-hashtag"></i><h4>Social Media Suggestions</h4>
+          <small>Best time to post today</small>
+        </div>
+        <div class="soc-grid">
+          {% for s in social %}
+          <div class="soc-card au d{{ forloop.counter }}">
+            <div class="soc-hdr">
+              <i class="fab {{ s.icon }}" style="color:{{ s.color }}"></i>
+              <span class="plat">{{ s.platform }}</span>
+            </div>
+            <div class="soc-time"><i class="fas fa-clock me-1"></i>{{ s.time }}</div>
+            <div class="soc-type">{{ s.type }}</div>
+            <div class="soc-tip">{{ s.tip }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ══════════════ TRAVEL RECOMMENDATION ══════════════ -->
+      {% if travel %}
+      <div>
+        <div class="sec-hdr ai-anim">
+          <i class="fas fa-plane"></i><h4>Travel Recommendation</h4>
+          <small>{{ travel.city|title }}</small>
+        </div>
+        <div class="travel-card au">
+          <div class="travel-rating tr-{{ travel.rc }}">
+            <i class="fas fa-star"></i>{{ travel.rating }}: {{ travel.rt }}
+          </div>
+          <div class="travel-best">
+            <strong><i class="fas fa-calendar me-1"></i>Best Time to Visit</strong>
+            {{ travel.best }}<br>
+            <span style="color:var(--dim);font-size:.72rem">{{ travel.reason }}</span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+            <a href="#" onclick="return false" style="font-size:.73rem;background:var(--tl);color:#fff;border-radius:20px;padding:5px 14px;text-decoration:none;font-weight:600">
+              <i class="fas fa-plane me-1"></i>Compare Flights
+            </a>
+            <a href="#" onclick="return false" style="font-size:.73rem;background:rgba(255,255,255,.10);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:5px 14px;text-decoration:none">
+              <i class="fas fa-hotel me-1"></i>Find Hotels
+            </a>
+          </div>
+          <div style="font-size:.76rem;font-weight:600;color:var(--dim);margin-top:14px;margin-bottom:6px">
+            <i class="fas fa-lightbulb me-1" style="color:var(--tl)"></i>Travel Tips
+          </div>
+          <div class="travel-tips">
+            {% for tip in travel.tips %}
+            <div class="travel-tip"><i class="fas fa-check-circle"></i><span>{{ tip }}</span></div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% endif %}{# end if data #}
+
+      <!-- ══════════════ BRANDMARK ══════════════ -->
+      <div class="brandmark" id="sec-brand">
+        <div class="bm-left">
+          <div class="bm-dev">Developed by <strong>Shaheer Iqbal</strong></div>
+          <div class="bm-copy">&copy; 2026 All Rights Reserved</div>
+        </div>
+        <div class="bm-socials">
+          <a class="bm-icon bm-li" href="https://www.linkedin.com/in/shaheer-iqbal-813669244/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" title="LinkedIn"><i class="fab fa-linkedin-in" aria-hidden="true"></i></a>
+          <a class="bm-icon bm-gh" href="https://github.com/shahgorithm" target="_blank" rel="noopener noreferrer" aria-label="GitHub" title="GitHub"><i class="fab fa-github" aria-hidden="true"></i></a>
+          <a class="bm-icon bm-go" href="https://share.google/5aZp8qnhI5vNKZITc" target="_blank" rel="noopener noreferrer" aria-label="Google" title="Google"><i class="fab fa-google" aria-hidden="true"></i></a>
+        </div>
+      </div>
+
+    </div><!-- /scroll-area -->
+  </div><!-- /ma -->
+</div><!-- /dash -->
+
+<!-- ══════════════ AI WEATHER ASSISTANT ══════════════ -->
+<div id="ai-prompt-bubble" onclick="toggleAI()">
+  <i class="fas fa-robot"></i>Can I guide you?
+</div>
+<button id="ai-fab" onclick="toggleAI()" title="Weather Assistant">
+  <i class="fas fa-robot"></i>
+</button>
+<div id="ai-panel">
+  <div class="ai-header">
+    <h6><i class="fas fa-robot" style="color:var(--tl)"></i>Weather Assistant</h6>
+    <button class="ai-close" onclick="toggleAI()"><i class="fas fa-xmark"></i></button>
+  </div>
+  <div id="ai-msgs">
+    <div class="ai-msg bot">
+      Hey there! 👋 I'm WeatherBuddy, your friendly weather companion for <strong>{{ city|title }}</strong>. Ask me anything — I'm here to help you make the most of your day!
+    </div>
+  </div>
+  <div class="ai-quick" id="ai-quick">
+    <span class="ai-q" onclick="aiAsk('Is it good to go outside?')">Go outside?</span>
+    <span class="ai-q" onclick="aiAsk('Should I carry an umbrella?')">Umbrella?</span>
+    <span class="ai-q" onclick="aiAsk('What is the temperature?')">Temperature?</span>
+    <span class="ai-q" onclick="aiAsk('Is the air quality good?')">Air quality?</span>
+    <span class="ai-q" onclick="aiAsk('Is it safe to drive?')">Safe to drive?</span>
+  </div>
+  <div class="ai-input-row">
+    <input type="text" id="ai-input" placeholder="Ask about the weather..." onkeydown="if(event.key==='Enter')aiSend()">
+    <button id="ai-send" onclick="aiSend()"><i class="fas fa-paper-plane"></i></button>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+    "use strict";
+
+    // ── Preloader ──────────────────────────────────────────
+    window.addEventListener("load", function(){
+        var p = document.getElementById("pre");
+        p.style.opacity = "0";
+        setTimeout(function(){ p.style.display = "none"; }, 650);
+    });
+
+    // ── Sidebar scroll helpers ─────────────────────────────
+    var _sbLocked = false;
+    var _sbLockTimer = null;
+
+    function sbSetActive(key){
+        document.querySelectorAll('.sbn[data-section]').forEach(function(b){
+            b.classList.toggle('on', b.getAttribute('data-section') === key);
+        });
+    }
+
+    window.scrollSec = function(id){
+        var sa = document.getElementById("scroll-area");
+        if(!sa) return;
+        var key = id.replace('#','');
+
+        // Lock observer during programmatic scroll
+        _sbLocked = true;
+        clearTimeout(_sbLockTimer);
+        _sbLockTimer = setTimeout(function(){ _sbLocked = false; }, 900);
+
+        // Set active immediately — don't wait for scroll to finish
+        sbSetActive(key);
+
+        if(key === 'top'){
+            sa.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+        }
+
+        var el = document.getElementById(key);
+        if(!el) return;
+
+        // getBoundingClientRect gives accurate position relative to viewport
+        var elTop  = el.getBoundingClientRect().top;
+        var saTop  = sa.getBoundingClientRect().top;
+        var target = sa.scrollTop + (elTop - saTop) - 10;
+        sa.scrollTo({ top: target, behavior: "smooth" });
+    };
+
+    // ── Active section — scroll-based detection ──────────────
+    (function(){
+        var sa = document.getElementById('scroll-area');
+        if(!sa) return;
+        var sections = ['sec-impact','sec-lifestyle','sec-forecast',
+                        'sec-act','sec-aqi','sec-creator','sec-event','sec-compare'];
+
+        function detectActive(){
+            if(_sbLocked) return;
+            if(sa.scrollTop < 80){ sbSetActive('top'); return; }
+
+            var saRect  = sa.getBoundingClientRect();
+            var trigger = saRect.top + sa.clientHeight * 0.28; // 28% line from top
+
+            var best = null, bestDist = Infinity;
+            sections.forEach(function(id){
+                var el = document.getElementById(id);
+                if(!el) return;
+                var rect = el.getBoundingClientRect();
+                // Skip sections not in view at all
+                if(rect.bottom < saRect.top || rect.top > saRect.bottom) return;
+                var dist = Math.abs(rect.top - trigger);
+                if(dist < bestDist){ bestDist = dist; best = id; }
+            });
+            if(best) sbSetActive(best);
+        }
+
+        sa.addEventListener('scroll', detectActive, { passive: true });
+    })();
+
+    // ── Favorites (localStorage) ───────────────────────────
+    var FAV_KEY = "wm_favs";
+    var currentCity = "{{ city|escapejs }}";
+
+    function getFavs(){ try{ return JSON.parse(localStorage.getItem(FAV_KEY)||"[]"); }catch(e){ return []; } }
+    function setFavs(f){ localStorage.setItem(FAV_KEY, JSON.stringify(f)); }
+
+    function renderFavs(){
+        var chips = document.getElementById("fav-chips");
+        if(!chips) return;
+        var favs = getFavs();
+        chips.innerHTML = favs.map(function(c){
+            return '<span class="fav-chip" onclick="searchCity(\''+c+'\')">'
+                + '<i class="fas fa-location-dot"></i>' + c
+                + '<span class="rm" title="Remove" onclick="removeFav(event,\''+c+'\')">✕</span>'
+                + '</span>';
+        }).join("");
+    }
+
+    window.saveFavorite = function(){
+        if(!currentCity) return;
+        var favs = getFavs();
+        if(!favs.includes(currentCity)){ favs.push(currentCity); setFavs(favs); }
+        renderFavs();
+    };
+
+    window.removeFav = function(e, city){
+        e.stopPropagation();
+        var favs = getFavs().filter(function(c){ return c !== city; });
+        setFavs(favs);
+        renderFavs();
+    };
+
+    window.searchCity = function(city){
+        var form = document.querySelector(".sw-form");
+        var inp  = form.querySelector("input[name='city']");
+        inp.value = city;
+        form.submit();
+    };
+
+    renderFavs();
+
+    // ── Real-time Event Weather Planner ───────────────────
+    var forecastData = {{ forecast_json|safe }};
+    var cityName = "{{ city|escapejs }}";
+
+    function eventRisk(f) {
+        var pop  = f.pop  || 0;
+        var wind = f.wind || 0;
+        var cond = (f.condition || '').toLowerCase();
+        if (cond.indexOf('thunderstorm') !== -1 || pop > 80 || wind > 12)
+            return { risk:'High',     c:'danger',  icon:'fa-xmark-circle',
+                     msg:'Severe conditions forecast. Consider rescheduling your event.' };
+        if (cond.indexOf('rain') !== -1 || pop > 40 || wind > 8)
+            return { risk:'Moderate', c:'warning', icon:'fa-triangle-exclamation',
+                     msg:'Some weather disruption possible. Have a backup plan ready.' };
+        return     { risk:'Low',      c:'success', icon:'fa-check-circle',
+                     msg:'Conditions look favourable for your event. Proceed as planned.' };
+    }
+
+    function renderEventResult(f) {
+        var r = eventRisk(f);
+        var w = document.getElementById('event-result-wrap');
+        if (!w) return;
+        w.innerHTML =
+            '<div class="event-result au">'
+          + '<div style="font-size:.80rem;font-weight:700;margin-bottom:8px;color:var(--dim)">'
+          + '<i class="fas fa-calendar me-1" style="color:var(--tl)"></i>'
+          + 'Forecast for ' + f.date + ', ' + cityName
+          + '</div>'
+          + '<div class="event-risk er-' + r.c + '">'
+          + '<i class="fas ' + r.icon + '"></i>&nbsp;Event Risk: ' + r.risk
+          + '</div>'
+          + '<div style="font-size:.74rem;color:rgba(255,255,255,.60);margin-bottom:12px">' + r.msg + '</div>'
+          + '<div class="event-stats">'
+          + '<div class="event-stat"><strong>' + f.temp_min + '\u00b0/' + f.temp_max + '\u00b0C</strong><span>Temperature Range</span></div>'
+          + '<div class="event-stat"><strong style="color:#50daff">' + f.pop + '%</strong><span>Rain Probability</span></div>'
+          + '<div class="event-stat"><strong>' + f.wind + ' m/s</strong><span>Wind Speed</span></div>'
+          + '<div class="event-stat"><strong>' + f.humidity + '%</strong><span>Humidity</span></div>'
+          + '</div></div>';
+    }
+
+    function clearEventWrap(msg) {
+        var w = document.getElementById('event-result-wrap');
+        if (!w) return;
+        w.innerHTML = msg
+            ? '<div style="font-size:.78rem;color:#ffd060;padding:12px 16px;background:rgba(255,193,7,.10);border:1px solid rgba(255,193,7,.2);border-radius:12px;margin-bottom:18px"><i class="fas fa-triangle-exclamation me-1"></i>' + msg + '</div>'
+            : '';
+    }
+
+    window.checkEventDate = function() {
+        var picker = document.getElementById('epicker');
+        if (!picker || !picker.value) { clearEventWrap(); return; }
+        var val = picker.value;
+        var found = null;
+        for (var i = 0; i < forecastData.length; i++) {
+            if (forecastData[i].date_iso === val) { found = forecastData[i]; break; }
+        }
+        if (found) {
+            renderEventResult(found);
+            var hv = document.getElementById('hdr-event-val');
+            if (hv) hv.value = val;
+        } else {
+            clearEventWrap('No forecast available for ' + val + '. The free forecast covers up to 5 days from today.');
+        }
+    };
+
+    // Trigger on date picker change or keyboard input
+    var epk = document.getElementById('epicker');
+    if (epk) {
+        epk.addEventListener('change', function() { checkEventDate(); });
+        epk.addEventListener('input',  function() { checkEventDate(); });
+    }
+
+    // ── Chart.js Forecast Trends ───────────────────────────
+    var chartLabels = {{ chart_labels|safe }};
+    var chartMax    = {{ chart_max|safe }};
+    var chartMin    = {{ chart_min|safe }};
+    var chartHum    = {{ chart_hum|safe }};
+    var chartWind   = {{ chart_wind|safe }};
+    var chartPop    = {{ chart_pop|safe }};
+
+    var chartDatasets = {
+        temp: {
+            label: 'Max Temp (°C)',
+            data: chartMax,
+            borderColor: '#ff8f8f',
+            backgroundColor: 'rgba(255,143,143,.12)',
+            fill: true,
+            tension: 0.4,
+        },
+        hum: {
+            label: 'Humidity (%)',
+            data: chartHum,
+            borderColor: '#50daff',
+            backgroundColor: 'rgba(80,218,255,.12)',
+            fill: true,
+            tension: 0.4,
+        },
+        wind: {
+            label: 'Wind (m/s)',
+            data: chartWind,
+            borderColor: '#6fe0a8',
+            backgroundColor: 'rgba(111,224,168,.12)',
+            fill: true,
+            tension: 0.4,
+        },
+        pop: {
+            label: 'Rain Probability (%)',
+            data: chartPop,
+            borderColor: '#6b9fff',
+            backgroundColor: 'rgba(107,159,255,.12)',
+            fill: true,
+            tension: 0.4,
+        }
+    };
+
+    var wChart = null;
+    function buildChart(key) {
+        var ctx = document.getElementById('wChart');
+        if (!ctx) return;
+        if (wChart) { wChart.destroy(); }
+        wChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartLabels,
+                datasets: [chartDatasets[key]]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: 'rgba(255,255,255,.65)', font: { family: 'Poppins', size: 11 } } },
+                    tooltip: { backgroundColor: 'rgba(10,22,28,.92)', titleColor: '#fff', bodyColor: 'rgba(255,255,255,.70)', padding: 10, cornerRadius: 10 }
+                },
+                scales: {
+                    x: { ticks: { color: 'rgba(255,255,255,.50)', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.06)' } },
+                    y: { ticks: { color: 'rgba(255,255,255,.50)', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.06)' } }
+                }
+            }
+        });
+    }
+
+    window.showChart = function(key, btn) {
+        document.querySelectorAll('.chart-tab').forEach(function(b){ b.classList.remove('on'); });
+        if (btn) btn.classList.add('on');
+        buildChart(key);
+    };
+
+    if (chartLabels && chartLabels.length > 0) {
+        buildChart('temp');
+    }
+
+    // ── AI Weather Assistant ───────────────────────────────
+    var aiWeather = {
+        city:      "{{ city|escapejs }}",
+        temp:      {% if data %}{{ data.main.temp }}{% else %}null{% endif %},
+        feels:     {% if data %}{{ data.main.feels_like }}{% else %}null{% endif %},
+        humidity:  {% if data %}{{ data.main.humidity }}{% else %}null{% endif %},
+        wind:      {% if data %}{{ data.wind.speed }}{% else %}null{% endif %},
+        condition: "{% if data %}{{ data.weather.0.main|escapejs }}{% endif %}",
+        desc:      "{% if data %}{{ data.weather.0.description|escapejs }}{% endif %}",
+        uv:        {% if data %}{{ data.uv_index }}{% else %}0{% endif %},
+        vis:       {% if data %}{{ data.visibility }}{% else %}10000{% endif %},
+        aqi:       {% if aqi %}{{ aqi.aqi }}{% else %}null{% endif %},
+        aqiLabel:  "{% if aqi %}{{ aqi.label|escapejs }}{% endif %}",
+        pop:       {% if forecast %}{{ forecast.0.pop }}{% else %}0{% endif %}
+    };
+
+    var aiOpen = false;
+    window.toggleAI = function(){
+        aiOpen = !aiOpen;
+        var panel  = document.getElementById('ai-panel');
+        var bubble = document.getElementById('ai-prompt-bubble');
+        if(aiOpen){ panel.classList.add('open'); document.getElementById('ai-input').focus(); }
+        else { panel.classList.remove('open'); }
+        if(bubble) bubble.style.display = 'none';
+    };
+
+    function aiAddTyping() {
+        var msgs = document.getElementById('ai-msgs');
+        var div  = document.createElement('div');
+        div.className = 'ai-msg bot ai-typing';
+        div.id = 'ai-typing-' + Date.now();
+        div.innerHTML = '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+        msgs.appendChild(div);
+        msgs.scrollTop = msgs.scrollHeight;
+        return div.id;
+    }
+
+    function aiRemoveTyping(id) {
+        var el = document.getElementById(id);
+        if (el) el.remove();
+    }
+
+    function aiReplyAsync(msg, callback) {
+        var w = aiWeather;
+        var csrf = (document.querySelector('[name="csrfmiddlewaretoken"]') || {}).value || '';
+        var body = [
+            'message='    + encodeURIComponent(msg),
+            'city='       + encodeURIComponent(w.city      || ''),
+            'temp='       + encodeURIComponent(w.temp      || ''),
+            'feels='      + encodeURIComponent(w.feels     || ''),
+            'humidity='   + encodeURIComponent(w.humidity  || ''),
+            'wind='       + encodeURIComponent(w.wind      || ''),
+            'condition='  + encodeURIComponent(w.condition || ''),
+            'desc='       + encodeURIComponent(w.desc      || ''),
+            'uv='         + encodeURIComponent(w.uv        || 0),
+            'vis='        + encodeURIComponent(w.vis       || 10000),
+            'aqi='        + encodeURIComponent(w.aqi       || ''),
+            'aqiLabel='   + encodeURIComponent(w.aqiLabel  || ''),
+            'pop='        + encodeURIComponent(w.pop       || 0),
+            'csrfmiddlewaretoken=' + encodeURIComponent(csrf),
+        ].join('&');
+        fetch('/api/chat/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: body,
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(d){ callback(d.reply || "I couldn't get a response. Please try again!"); })
+        .catch(function(){  callback("I'm having a little trouble right now. Please try again in a moment!"); });
+    }
+
+    function aiAddMsg(text, role) {
+        var msgs = document.getElementById('ai-msgs');
+        var div  = document.createElement('div');
+        div.className = 'ai-msg ' + role;
+        div.innerHTML = text;
+        msgs.appendChild(div);
+        msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    window.aiAsk = function(question) {
+        aiAddMsg(question, 'user');
+        document.getElementById('ai-quick').style.display = 'none';
+        var tid = aiAddTyping();
+        aiReplyAsync(question, function(reply){
+            aiRemoveTyping(tid);
+            aiAddMsg(reply, 'bot');
+        });
+    };
+
+    window.aiSend = function() {
+        var input = document.getElementById('ai-input');
+        var q = input.value.trim();
+        if (!q) return;
+        input.value = '';
+        aiAddMsg(q, 'user');
+        document.getElementById('ai-quick').style.display = 'none';
+        var tid = aiAddTyping();
+        aiReplyAsync(q, function(reply){
+            aiRemoveTyping(tid);
+            aiAddMsg(reply, 'bot');
+        });
+    };
+
+    // ── Real-time City Comparison ──────────────────────────
+    function renderComparison(results) {
+        var wrap = document.getElementById('compare-result-wrap');
+        if (!wrap) return;
+        if (!results || results.length === 0) { wrap.innerHTML = ''; return; }
+        var rows = results.map(function(r) {
+            if (r.error) {
+                return '<tr>'
+                    + '<td class="city-col"><i class="fas fa-location-dot me-1" style="color:var(--tl)"></i>' + r.city + '</td>'
+                    + '<td colspan="7" style="color:#ff8f8f;font-size:.72rem"><i class="fas fa-circle-exclamation me-1"></i>' + r.error + '</td>'
+                    + '</tr>';
+            }
+            return '<tr>'
+                + '<td class="city-col"><i class="fas fa-location-dot me-1" style="color:var(--tl)"></i>' + r.city + '</td>'
+                + '<td><div class="compare-cond"><img src="https://openweathermap.org/img/wn/' + r.icon + '.png" alt=""><span style="font-size:.72rem">' + r.condition + '</span></div></td>'
+                + '<td><strong>' + Math.round(r.temp) + '&deg;C</strong></td>'
+                + '<td>' + Math.round(r.feels_like) + '&deg;C</td>'
+                + '<td>' + r.humidity + '%</td>'
+                + '<td>' + r.wind + ' m/s</td>'
+                + '<td>' + r.pressure + ' hPa</td>'
+                + '<td>' + r.uv_index + '</td>'
+                + '</tr>';
+        }).join('');
+        wrap.innerHTML = '<div class="compare-table-wrap au">'
+            + '<table class="compare-table">'
+            + '<thead><tr><th>City</th><th>Condition</th><th>Temp</th><th>Feels Like</th><th>Humidity</th><th>Wind</th><th>Pressure</th><th>UV</th></tr></thead>'
+            + '<tbody>' + rows + '</tbody>'
+            + '</table></div>';
+    }
+
+    window.doCompare = function(e) {
+        if (e) e.preventDefault();
+        var inp = document.getElementById('compare-city-inp');
+        var btn = document.getElementById('compare-btn');
+        if (!inp || !inp.value.trim()) return false;
+        var csrfEl = document.querySelector('#compare-form [name="csrfmiddlewaretoken"]');
+        var csrf   = csrfEl ? csrfEl.value : '';
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Fetching...'; }
+        fetch('/api/compare/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'cities=' + encodeURIComponent(inp.value.trim()) + '&csrfmiddlewaretoken=' + encodeURIComponent(csrf)
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-magnifying-glass me-1"></i>Compare'; }
+            renderComparison(data.results);
+        })
+        .catch(function(){
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-magnifying-glass me-1"></i>Compare'; }
+        });
+        return false;
+    };
+
+})();
+</script>
+
+<script>
+// ── City Search Autocomplete ──────────────────────────────────────
+(function(){
+    var inp  = document.getElementById('sw-city-inp');
+    var box  = document.getElementById('sw-suggest');
+    if(!inp || !box) return;
+
+    var timer  = null;
+    var active = -1;
+
+    function setActive(items, idx){
+        items.forEach(function(el,i){ el.classList.toggle('act', i===idx); });
+        if(idx >= 0){ inp.value = items[idx].getAttribute('data-val'); }
+    }
+
+    function showSuggest(items){
+        if(!items.length){ hideSuggest(); return; }
+        active = -1;
+        box.innerHTML = items.map(function(it){
+            return '<div class="sw-sug-item" data-val="'+it.name+'">'
+                + '<i class="fas fa-location-dot" aria-hidden="true"></i>'
+                + '<span>'+it.label+'</span>'
+                + '</div>';
+        }).join('');
+        box.classList.add('open');
+        box.querySelectorAll('.sw-sug-item').forEach(function(el){
+            el.addEventListener('mousedown', function(e){
+                e.preventDefault();
+                inp.value = this.getAttribute('data-val');
+                hideSuggest();
+                inp.closest('form').submit();
+            });
+        });
+    }
+
+    function hideSuggest(){ box.classList.remove('open'); active = -1; }
+
+    inp.addEventListener('input', function(){
+        clearTimeout(timer);
+        var q = inp.value.trim();
+        if(q.length < 2){ hideSuggest(); return; }
+        timer = setTimeout(function(){
+            fetch('/api/suggest/?q=' + encodeURIComponent(q))
+                .then(function(r){ return r.json(); })
+                .then(function(d){ showSuggest(d.results || []); })
+                .catch(function(){ hideSuggest(); });
+        }, 280);
+    });
+
+    inp.addEventListener('keydown', function(e){
+        var items = box.querySelectorAll('.sw-sug-item');
+        if(!box.classList.contains('open') || !items.length) return;
+        if(e.key === 'ArrowDown'){
+            e.preventDefault();
+            active = Math.min(active + 1, items.length - 1);
+            setActive(items, active);
+        } else if(e.key === 'ArrowUp'){
+            e.preventDefault();
+            active = Math.max(active - 1, 0);
+            setActive(items, active);
+        } else if(e.key === 'Enter' && active >= 0){
+            e.preventDefault();
+            inp.value = items[active].getAttribute('data-val');
+            hideSuggest();
+            inp.closest('form').submit();
+        } else if(e.key === 'Escape'){
+            hideSuggest();
+        }
+    });
+
+    inp.addEventListener('blur', function(){
+        setTimeout(hideSuggest, 150);
+    });
+})();
+</script>
+</body>
+</html>
